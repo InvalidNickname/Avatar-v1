@@ -45,42 +45,60 @@ while True:
             rel_h = shape[33][1] - shape[27][1]
         # текушее увеличение лица
         mod = (shape[33][1] - shape[27][1]) / rel_h
-        print(mod)
-        # определяем поворот лица по двум точкам (36 и 45) - дальние края глаз
+        # определяем поворот лица по двум точкам (35 и 45) - дальний край левого глаза и левый край носа
         a = shape[45][0] - shape[35][0]
         b = utils.length(shape[45], shape[35])
         alpha = math.degrees(math.acos(a / b) - 1)
         # определяем положение рта, точки 62 и 66
         dst = utils.length(shape[66], shape[62]) / mod
         mouth_shape = 3
-        if dst < 8:
+        if dst < 6:
             mouth_shape = 0
-        elif dst < 12:
+        elif dst < 9:
             mouth_shape = 1
-        elif dst < 17:
+        elif dst < 12:
             mouth_shape = 2
-        elif dst < 25:
-            mouth_shape = 3
-        # определяем положение зрачков
-        # правый глаз - точки 36, 39
-        # левый глаз - точки 42, 45
+        # определяем положение глаз
+        # правый глаз - точки 37, 41
+        dst = utils.length(shape[37], shape[41]) / mod
+        right_eye_shape = 3
+        if dst < 6:
+            right_eye_shape = 0
+        elif dst < 7:
+            right_eye_shape = 1
+        elif dst < 8:
+            right_eye_shape = 2
+        # левый глаз - точки 43, 47
+        dst = utils.length(shape[43], shape[47]) / mod
+        left_eye_shape = 3
+        if dst < 6:
+            left_eye_shape = 0
+        elif dst < 7:
+            left_eye_shape = 1
+        elif dst < 8:
+            left_eye_shape = 2
         # брови
         # инициализация изначального положения бровей
         if left_brow_pos_init < 0:
-            left_brow_pos_init = utils.length(shape[44], shape[24]) / mod
-            right_brow_pos_init = utils.length(shape[37], shape[19]) / mod
-        left_brow_pos_delta = utils.length(shape[44], shape[24]) / mod - left_brow_pos_init
-        right_brow_pos_delta = utils.length(shape[37], shape[19]) / mod - right_brow_pos_init
+            left_brow_pos_init = utils.length(shape[57], shape[24]) / mod
+            right_brow_pos_init = utils.length(shape[57], shape[19]) / mod
+        left_brow_pos_delta = utils.length(shape[57], shape[24]) / mod - left_brow_pos_init
+        right_brow_pos_delta = utils.length(shape[57], shape[19]) / mod - right_brow_pos_init
         # отрисовка и отображение
-        animator.animate(alpha, left_brow_pos_delta*2, right_brow_pos_delta*2)
-        animator.put_mask(mouth_shape)
+        animator.animate(alpha, left_brow_pos_delta * 2, right_brow_pos_delta * 2)
+        animator.put_mask(mouth_shape, right_eye_shape, left_eye_shape)
         animator.display()
     else:
         cv.putText(frame, "Face not found", (20, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 32, 32))
 
     cv.imshow("Output", frame)
-    if cv.waitKey(1) == ord('q'):
+    key = cv.waitKey(1)
+    if key == ord('q'):
         break
+    elif key == ord('r'):
+        left_brow_pos_init = -100
+        right_brow_pos_init = -100
+        rel_h = -100.
 
 cap.release()
 cv.destroyAllWindows()
