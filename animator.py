@@ -6,6 +6,8 @@ import utils
 
 class Animator:
     cur_tilt = 0
+    cur_left_brow = 0
+    cur_right_brow = 0
     res = None
 
     def __init__(self):
@@ -22,7 +24,7 @@ class Animator:
                       ]
         self.hair = utils.load_image("data/animation/hair.png")
 
-    def animate(self, angle):
+    def animate(self, angle, left_brow_pos, right_brow_pos):
         # поворачиваем лицо
         if angle < self.cur_tilt:
             self.cur_tilt -= (self.cur_tilt - angle) / 3
@@ -33,8 +35,26 @@ class Animator:
             self.cur_tilt = 15
         elif self.cur_tilt < -15:
             self.cur_tilt = -15
+        # двигаем брови
+        if left_brow_pos < self.cur_left_brow:
+            self.cur_left_brow -= (self.cur_left_brow - left_brow_pos) / 2
+        elif left_brow_pos > self.cur_left_brow:
+            self.cur_left_brow += (left_brow_pos - self.cur_left_brow) / 2
+        if right_brow_pos < self.cur_right_brow:
+            self.cur_right_brow -= (self.cur_right_brow - right_brow_pos) / 2
+        elif right_brow_pos > self.cur_right_brow:
+            self.cur_right_brow += (right_brow_pos - self.cur_right_brow) / 2
+        # лимиты сдвига
+        if self.cur_left_brow < -20:
+            self.cur_left_brow = 20
+        elif self.cur_left_brow > 20:
+            self.cur_left_brow = 20
+        if self.cur_right_brow < -20:
+            self.cur_right_brow = 20
+        elif self.cur_right_brow > 20:
+            self.cur_right_brow = 20
 
-    def put_mask(self, mouth_shape, left_brow_pos, right_brow_pos):
+    def put_mask(self, mouth_shape):
         rot = cv.getRotationMatrix2D((self.head.shape[0] / 2., self.head.shape[1] / 2. + 70), self.cur_tilt, 1)
         new_shape = (self.head.shape[1], self.head.shape[0])
 
@@ -45,8 +65,8 @@ class Animator:
                                   borderMode=cv.BORDER_REPLICATE)
         rot_hair = cv.warpAffine(self.hair, rot, new_shape, flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
 
-        left_brow_shift = np.float32([[1, 0, 0], [0, 1, -left_brow_pos]])
-        right_brow_shift = np.float32([[1, 0, 0], [0, 1, -right_brow_pos]])
+        left_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_left_brow]])
+        right_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_right_brow]])
 
         rot_left_brow = cv.warpAffine(self.left_brow, left_brow_shift, new_shape, borderMode=cv.BORDER_REPLICATE)
         rot_left_brow = cv.warpAffine(rot_left_brow, rot, new_shape, flags=cv.INTER_LINEAR,
