@@ -5,11 +5,15 @@ import cv2 as cv
 import math
 import numpy as np
 import animator as anim
+import utils
 
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("data/model.dat")
 
 animator = anim.Animator()
+
+left_brow_pos_init = -100
+right_brow_pos_init = -100
 
 cap = cv.VideoCapture(0)
 if not cap.isOpened():
@@ -37,11 +41,32 @@ while True:
         # начинаем изврат
         # определяем поворот лица по двум точкам (36 и 45) - дальние края глаз
         a = shape[45][0] - shape[35][0]
-        b = math.sqrt(a ** 2 + (shape[45][1] - shape[35][1]) ** 2)
+        b = utils.length(shape[45], shape[35])
         alpha = math.degrees(math.acos(a / b) - 1)
+        # определяем положение рта, точки 62 и 66
+        dst = utils.length(shape[66], shape[62]) * (223 / h)
+        mouth_shape = 3
+        if dst < 8:
+            mouth_shape = 0
+        elif dst < 12:
+            mouth_shape = 1
+        elif dst < 17:
+            mouth_shape = 2
+        elif dst < 25:
+            mouth_shape = 3
+        # определяем положение зрачков
+        # правый глаз - точки 36, 39
+        # левый глаз - точки 42, 45
+        # брови
+        # инициализация изначального положения бровей
+        if left_brow_pos_init < 0:
+            left_brow_pos_init = utils.length(shape[44], shape[24]) / float(h)
+            right_brow_pos_init = utils.length(shape[37], shape[19]) / float(h)
+        left_brow_pos_delta = utils.length(shape[44], shape[24]) / float(h) - left_brow_pos_init
+        right_brow_pos_delta = utils.length(shape[37], shape[19]) / float(h) - right_brow_pos_init
         # отрисовка и отображение
         animator.animate(alpha)
-        animator.put_mask()
+        animator.put_mask(mouth_shape, left_brow_pos_delta*100, right_brow_pos_delta*100)
         animator.display()
     else:
         cv.putText(frame, "Face not found", (20, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 32, 32))

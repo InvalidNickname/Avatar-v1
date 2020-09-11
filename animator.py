@@ -1,20 +1,26 @@
 import cv2 as cv
 import numpy as np
 
+import utils
+
 
 class Animator:
     cur_tilt = 0
     res = None
 
     def __init__(self):
-        background = cv.imread("data/animation/background.png", cv.IMREAD_GRAYSCALE)
-        self.background = cv.resize(background, (0, 0), fx=0.5, fy=0.5)
-
-        head = cv.imread("data/animation/head.png", cv.IMREAD_GRAYSCALE)
-        self.head = cv.resize(head, (0, 0), fx=0.5, fy=0.5)
-
-        hair_back = cv.imread("data/animation/hair_back.png", cv.IMREAD_GRAYSCALE)
-        self.hair_back = cv.resize(hair_back, (0, 0), fx=0.5, fy=0.5)
+        self.hair_back = utils.load_image("data/animation/hair_back.png")
+        self.background = utils.load_image("data/animation/background.png")
+        self.head = utils.load_image("data/animation/head.png")
+        self.left_brow = utils.load_image("data/animation/left_brow.png")
+        self.right_brow = utils.load_image("data/animation/right_brow.png")
+        self.mouth = [utils.load_image("data/animation/mouth/1.png"),
+                      utils.load_image("data/animation/mouth/2.png"),
+                      utils.load_image("data/animation/mouth/3.png"),
+                      utils.load_image("data/animation/mouth/4.png"),
+                      # utils.load_image("data/animation/mouth/5.png")]
+                      ]
+        self.hair = utils.load_image("data/animation/hair.png")
 
     def animate(self, angle):
         # поворачиваем лицо
@@ -22,24 +28,40 @@ class Animator:
             self.cur_tilt -= (self.cur_tilt - angle) / 3
         elif angle > self.cur_tilt:
             self.cur_tilt += (angle - self.cur_tilt) / 3
-
+        # лимиты поворота
         if self.cur_tilt > 15:
             self.cur_tilt = 15
         elif self.cur_tilt < -15:
             self.cur_tilt = -15
-        #
 
-    def put_mask(self):
+    def put_mask(self, mouth_shape, left_brow_pos, right_brow_pos):
         rot = cv.getRotationMatrix2D((self.head.shape[0] / 2., self.head.shape[1] / 2. + 70), self.cur_tilt, 1)
+        new_shape = (self.head.shape[1], self.head.shape[0])
 
-        rot_head = cv.warpAffine(self.head, rot, (self.head.shape[1], self.head.shape[0]), flags=cv.INTER_LINEAR,
-                                 borderMode=cv.BORDER_REPLICATE)
-        rot_hair_back = cv.warpAffine(self.hair_back, rot, (self.head.shape[1], self.head.shape[0]),
-                                      flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
+        rot_head = cv.warpAffine(self.head, rot, new_shape, flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
+        rot_hair_back = cv.warpAffine(self.hair_back, rot, new_shape, flags=cv.INTER_LINEAR,
+                                      borderMode=cv.BORDER_REPLICATE)
+        rot_mouth = cv.warpAffine(self.mouth[mouth_shape], rot, new_shape, flags=cv.INTER_LINEAR,
+                                  borderMode=cv.BORDER_REPLICATE)
+        rot_hair = cv.warpAffine(self.hair, rot, new_shape, flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
 
-        self.res = rot_hair_back
-        np.putmask(self.res, self.background > 0, self.background)
-        np.putmask(self.res, rot_head > 0, rot_head)
+        left_brow_shift = np.float32([[1, 0, 0], [0, 1, -left_brow_pos]])
+        right_brow_shift = np.float32([[1, 0, 0], [0, 1, -right_brow_pos]])
+
+        rot_left_brow = cv.warpAffine(self.left_brow, left_brow_shift, new_shape, borderMode=cv.BORDER_REPLICATE)
+        rot_left_brow = cv.warpAffine(rot_left_brow, rot, new_shape, flags=cv.INTER_LINEAR,
+                                      borderMode=cv.BORDER_REPLICATE)
+        rot_right_brow = cv.warpAffine(self.right_brow, right_brow_shift, new_shape, borderMode=cv.BORDER_REPLICATE)
+        rot_right_brow = cv.warpAffine(rot_right_brow, rot, new_shape, flags=cv.INTER_LINEAR,
+                                       borderMode=cv.BORDER_REPLICATE)
+
+        self.res = cv.cvtColor(rot_hair_back, cv.COLOR_BGRA2BGR)
+        self.res = utils.blend_transparent(self.res, self.background)
+        self.res = utils.blend_transparent(self.res, rot_head)
+        self.res = utils.blend_transparent(self.res, rot_mouth)
+        brows = cv.bitwise_or(rot_right_brow, rot_left_brow)
+        self.res = utils.blend_transparent(self.res, brows)
+        self.res = utils.blend_transparent(self.res, rot_hair)
 
     def display(self):
         cv.imshow("Animezator", self.res)
