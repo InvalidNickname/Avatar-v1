@@ -14,6 +14,10 @@ animator = anim.Animator()
 
 left_brow_pos_init = -100
 right_brow_pos_init = -100
+r_eye_init = -100
+l_eye_init = -100
+r_pupil_init = -100
+l_pupil_init = -100
 rel_h = -100.
 
 cap = cv.VideoCapture(0)
@@ -68,6 +72,13 @@ while True:
             right_eye_shape = 1
         elif dst < 8:
             right_eye_shape = 2
+        right_eye_area = gray[shape[20][1]:shape[30][1], shape[36][0]:shape[39][0]]
+        right_eye_area = cv.equalizeHist(right_eye_area)
+        _, thresh_gray = cv.threshold(right_eye_area, 0, 255, cv.THRESH_BINARY)
+        max_index = np.argmax(thresh_gray)
+        if r_pupil_init == -100:
+            r_pupil_init = ((shape[39][0] + shape[36][0]) / 2 - shape[36][0] - max_index) / mod
+        r_pupil_pos = ((shape[39][0] + shape[36][0]) / 2 - shape[36][0] - max_index) / mod - r_pupil_init
         # левый глаз - точки 43, 47
         dst = utils.length(shape[43], shape[47]) / mod
         left_eye_shape = 3
@@ -77,6 +88,13 @@ while True:
             left_eye_shape = 1
         elif dst < 8:
             left_eye_shape = 2
+        left_eye_area = gray[shape[23][1]:shape[30][1], shape[42][0]:shape[44][0]]
+        left_eye_area = cv.equalizeHist(left_eye_area)
+        _, thresh_gray = cv.threshold(right_eye_area, 0, 255, cv.THRESH_BINARY)
+        max_index = np.argmax(thresh_gray)
+        if l_pupil_init == -100:
+            l_pupil_init = ((shape[44][0] + shape[42][0]) / 2 - shape[42][0] - max_index) / mod
+        l_pupil_pos = ((shape[44][0] + shape[42][0]) / 2 - shape[42][0] - max_index) / mod - l_pupil_init
         # брови
         # инициализация изначального положения бровей
         if left_brow_pos_init < 0:
@@ -86,7 +104,7 @@ while True:
         right_brow_pos_delta = utils.length(shape[57], shape[19]) / mod - right_brow_pos_init
         # отрисовка и отображение
         animator.animate(alpha, left_brow_pos_delta * 2, right_brow_pos_delta * 2)
-        animator.put_mask(mouth_shape, right_eye_shape, left_eye_shape)
+        animator.put_mask(mouth_shape, right_eye_shape, left_eye_shape, r_pupil_pos, l_pupil_pos)
         animator.display()
     else:
         cv.putText(frame, "Face not found", (20, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 32, 32))
@@ -98,6 +116,10 @@ while True:
     elif key == ord('r'):
         left_brow_pos_init = -100
         right_brow_pos_init = -100
+        r_eye_init = -100
+        l_eye_init = -100
+        r_pupil_init = -100
+        l_pupil_init = -100
         rel_h = -100.
 
 cap.release()

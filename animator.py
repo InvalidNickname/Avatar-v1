@@ -28,7 +28,7 @@ class Animator:
                             utils.load_image("data/animation/right_eye/white_4.png"),
                             # utils.load_image("data/animation/right_eye/white_2.png")
                             ]
-        # self.r_eye_pupil = utils.load_image("data/animation/right_eye/pupil.png")
+        self.r_eye_pupil = utils.load_image("data/animation/right_eye/pupil.png")
         self.r_eye = [utils.load_image("data/animation/right_eye/eye_1.png"),
                       utils.load_image("data/animation/right_eye/eye_2.png"),
                       utils.load_image("data/animation/right_eye/eye_3.png"),
@@ -41,7 +41,7 @@ class Animator:
                             utils.load_image("data/animation/left_eye/white_4.png"),
                             # utils.load_image("data/animation/left_eye/white_2.png")
                             ]
-        # self.l_eye_pupil = utils.load_image("data/animation/left_eye/pupil.png")
+        self.l_eye_pupil = utils.load_image("data/animation/left_eye/pupil.png")
         self.l_eye = [utils.load_image("data/animation/left_eye/eye_1.png"),
                       utils.load_image("data/animation/left_eye/eye_2.png"),
                       utils.load_image("data/animation/left_eye/eye_3.png"),
@@ -80,7 +80,15 @@ class Animator:
         elif self.cur_r_brow > 20:
             self.cur_r_brow = 20
 
-    def put_mask(self, mouth_shape, r_eye_shape, l_eye_shape):
+    def make_eye(self, eye, eye_white, pupil_pos, new_shape, pupil):
+        pupil_shift = np.float32([[1, 0, pupil_pos], [0, 1, 0]])
+        eye_pupil = cv.warpAffine(pupil, pupil_shift, new_shape, borderMode=cv.BORDER_REPLICATE)
+        eye_pupil = cv.copyTo(eye_pupil, eye_white)
+        res_eye = utils.blend_transparent(eye_white, eye_pupil)
+        res_eye = utils.blend_transparent(res_eye, eye)
+        return res_eye
+
+    def put_mask(self, mouth_shape, r_eye_s, l_eye_s, r_pupil_pos, l_pupil_pos):
         repl = cv.BORDER_REPLICATE
         linear = cv.INTER_LINEAR
         rot = cv.getRotationMatrix2D((self.head.shape[0] / 2., self.head.shape[1] / 2. + 70), self.cur_tilt, 1)
@@ -99,9 +107,11 @@ class Animator:
         face = utils.blend_transparent(self.head, self.mouth[mouth_shape])  # голова + рот
         brows = cv.bitwise_or(r_brow, l_brow)
         face = utils.blend_transparent(face, brows)  # голова + рот + брови
-        r_eye = utils.blend_transparent(self.r_eye_white[r_eye_shape], self.r_eye[r_eye_shape])
-        l_eye = utils.blend_transparent(self.l_eye_white[l_eye_shape], self.l_eye[l_eye_shape])
+
+        r_eye = self.make_eye(self.r_eye[r_eye_s], self.r_eye_white[r_eye_s], r_pupil_pos, new_shape, self.r_eye_pupil)
+        l_eye = self.make_eye(self.l_eye[l_eye_s], self.l_eye_white[l_eye_s], l_pupil_pos, new_shape, self.l_eye_pupil)
         eyes = cv.bitwise_or(r_eye, l_eye)
+
         face = utils.blend_transparent(face, eyes)  # голова + рот + брови + глаза
         face = utils.blend_transparent(face, self.hair)  # голова + рот + брови + глаза + волосы
         face = cv.warpAffine(face, rot, new_shape, flags=linear, borderMode=repl)
