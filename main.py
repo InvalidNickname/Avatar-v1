@@ -32,6 +32,7 @@ while True:
     frame = cv.flip(frame, 1)
     frame = imutils.resize(frame, width=500)
     gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    gray = cv.equalizeHist(gray)
     # обнаружение лица
     rects = detector(gray, 1)
     if rects:
