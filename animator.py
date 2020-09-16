@@ -9,6 +9,8 @@ class Animator:
     cur_tilt = 0
     cur_l_brow = 0
     cur_r_brow = 0
+    cur_r_pupil = 0
+    cur_l_pupil = 0
     res = None
 
     def __init__(self):
@@ -51,41 +53,26 @@ class Animator:
                       ]
         self.hair = utils.load_image("data/animation/hair.png")
 
-    def animate(self, angle, l_brow_pos, r_brow_pos):
+    def animate(self, angle, l_brow_pos, r_brow_pos, r_pupil_pos, l_pupil_pos):
         # поворачиваем лицо
-        if angle < self.cur_tilt:
-            self.cur_tilt -= (self.cur_tilt - angle) / 3
-        elif angle > self.cur_tilt:
-            self.cur_tilt += (angle - self.cur_tilt) / 3
-        # лимиты поворота
-        if self.cur_tilt > LIMIT_HEAD_TILT:
-            self.cur_tilt = LIMIT_HEAD_TILT
-        elif self.cur_tilt < -LIMIT_HEAD_TILT:
-            self.cur_tilt = -LIMIT_HEAD_TILT
+        self.cur_tilt = move_slowly(angle, self.cur_tilt, 3)
+        self.cur_tilt = set_limits(self.cur_tilt, LIMIT_HEAD_TILT, -LIMIT_HEAD_TILT)
         # двигаем брови
-        if l_brow_pos < self.cur_l_brow:
-            self.cur_l_brow -= (self.cur_l_brow - l_brow_pos) / 2
-        elif l_brow_pos > self.cur_l_brow:
-            self.cur_l_brow += (l_brow_pos - self.cur_l_brow) / 2
-        if r_brow_pos < self.cur_r_brow:
-            self.cur_r_brow -= (self.cur_r_brow - r_brow_pos) / 2
-        elif r_brow_pos > self.cur_r_brow:
-            self.cur_r_brow += (r_brow_pos - self.cur_r_brow) / 2
-        # лимиты сдвига
-        if self.cur_l_brow < LIMIT_BROW_LOW:
-            self.cur_l_brow = LIMIT_BROW_LOW
-        elif self.cur_l_brow > LIMIT_BROW_HIGH:
-            self.cur_l_brow = LIMIT_BROW_HIGH
-        if self.cur_r_brow < LIMIT_BROW_LOW:
-            self.cur_r_brow = LIMIT_BROW_LOW
-        elif self.cur_r_brow > LIMIT_BROW_HIGH:
-            self.cur_r_brow = LIMIT_BROW_HIGH
+        self.cur_l_brow = move_slowly(l_brow_pos, self.cur_l_brow, 2)
+        self.cur_l_brow = set_limits(self.cur_l_brow, LIMIT_BROW_HIGH, LIMIT_BROW_LOW)
+        self.cur_r_brow = move_slowly(r_brow_pos, self.cur_r_brow, 2)
+        self.cur_r_brow = set_limits(self.cur_r_brow, LIMIT_BROW_HIGH, LIMIT_BROW_LOW)
+        # двигаем зрачки
+        self.cur_r_pupil = move_slowly(r_pupil_pos, self.cur_r_pupil, 2)
+        self.cur_l_pupil = move_slowly(l_pupil_pos, self.cur_l_pupil, 2)
 
-    def put_mask(self, mouth_shape, r_eye_s, l_eye_s, r_pupil_pos, l_pupil_pos):
-        rot = cv.getRotationMatrix2D((self.head.shape[0] / 2, self.head.shape[1] / 2 + HEAD_ROTATION_POINT_Y), self.cur_tilt, 1)
+    def put_mask(self, mouth_shape, r_eye_s, l_eye_s):
+        rot = cv.getRotationMatrix2D((self.head.shape[0] / 2, self.head.shape[1] / 2 + HEAD_ROT_POINT_Y), self.cur_tilt,
+                                     1)
         new_shape = (self.head.shape[1], self.head.shape[0])
 
-        rot_hair_back = cv.warpAffine(self.hair_back, rot, new_shape, flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
+        rot_hair_back = cv.warpAffine(self.hair_back, rot, new_shape, flags=cv.INTER_LINEAR,
+                                      borderMode=cv.BORDER_REPLICATE)
 
         l_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_l_brow]])
         r_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_r_brow]])
@@ -99,8 +86,8 @@ class Animator:
         brows = cv.bitwise_or(r_brow, l_brow)
         face = utils.blend_transparent(face, brows)  # голова + рот + брови
 
-        r_eye = make_eye(self.r_eye[r_eye_s], self.r_eye_white[r_eye_s], r_pupil_pos, new_shape, self.r_eye_pupil)
-        l_eye = make_eye(self.l_eye[l_eye_s], self.l_eye_white[l_eye_s], l_pupil_pos, new_shape, self.l_eye_pupil)
+        r_eye = make_eye(self.r_eye[r_eye_s], self.r_eye_white[r_eye_s], self.cur_r_pupil, new_shape, self.r_eye_pupil)
+        l_eye = make_eye(self.l_eye[l_eye_s], self.l_eye_white[l_eye_s], self.cur_l_pupil, new_shape, self.l_eye_pupil)
         eyes = cv.bitwise_or(r_eye, l_eye)
 
         face = utils.blend_transparent(face, eyes)  # голова + рот + брови + глаза
@@ -121,3 +108,19 @@ def make_eye(eye, eye_white, pupil_pos, new_shape, pupil):
     res_eye = utils.blend_transparent(eye_white, eye_pupil)
     res_eye = utils.blend_transparent(res_eye, eye)
     return res_eye
+
+
+def move_slowly(direction, current, multiplier):
+    if direction < current:
+        current -= (current - direction) / multiplier
+    elif direction > current:
+        current += (direction - current) / multiplier
+    return current
+
+
+def set_limits(current, upper_limit, lower_limit):
+    if current > upper_limit:
+        current = upper_limit
+    elif current < lower_limit:
+        current = lower_limit
+    return current
