@@ -1,0 +1,23 @@
+[
+  {
+    "name": "default",
+    "id": 0,
+    "key": "0",
+    "replaces": {
+    }
+  },
+  {
+    "name": "ahegao",
+    "id": 1,
+    "key": "1",
+    "replaces": {
+      "head": "data/animation/overlays/ahegao.png",
+      "hair": "",
+      "l_brow": "",
+      "r_brow": "",
+      "mouth": "",
+      "r_eye": "",
+      "l_eye": ""
+    }
+  }
+]

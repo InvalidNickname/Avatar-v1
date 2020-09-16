@@ -2,6 +2,7 @@ import cv2 as cv
 import numpy as np
 
 import utils
+from overlay import *
 from limits import *
 
 
@@ -11,9 +12,15 @@ class Animator:
     cur_r_brow = 0
     cur_r_pupil = 0
     cur_l_pupil = 0
+    # hair_back, background, head, l_brow, r_brow, mouth, r_eye_white, r_eye_pupil, r_eye, l_eye_white, l_eye_pupil, l_eye, hair
+    cur_overlay = 0
+    overlay_imgs = []
     res = None
 
-    def __init__(self):
+    def __init__(self, overlays):
+        self.overlays = overlays
+        for overlay in overlays:
+            self.overlay_imgs.append(Overlay(overlay))
         self.hair_back = utils.load_image("data/animation/hair_back.png")
         self.background = utils.load_image("data/animation/background.png")
         self.head = utils.load_image("data/animation/head.png")
@@ -71,27 +78,79 @@ class Animator:
                                      1)
         new_shape = (self.head.shape[1], self.head.shape[0])
 
-        rot_hair_back = cv.warpAffine(self.hair_back, rot, new_shape, flags=cv.INTER_LINEAR,
-                                      borderMode=cv.BORDER_REPLICATE)
+        overlay = self.overlay_imgs[self.cur_overlay]
 
-        l_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_l_brow]])
-        r_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_r_brow]])
-        l_brow = cv.warpAffine(self.l_brow, l_brow_shift, new_shape, borderMode=cv.BORDER_REPLICATE)
-        r_brow = cv.warpAffine(self.r_brow, r_brow_shift, new_shape, borderMode=cv.BORDER_REPLICATE)
+        if overlay.has_hair_back == 0:
+            rot_hair_back = cv.warpAffine(self.hair_back, rot, new_shape, flags=cv.INTER_LINEAR,
+                                          borderMode=cv.BORDER_REPLICATE)
+        elif overlay.has_hair_back == -1:
+            rot_hair_back = np.zeros(self.hair_back.shape)
+        else:
+            rot_hair_back = cv.warpAffine(overlay.hair_back, rot, new_shape, flags=cv.INTER_LINEAR,
+                                          borderMode=cv.BORDER_REPLICATE)
+
+        if overlay.has_l_brow == 0:
+            l_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_l_brow]])
+            l_brow = cv.warpAffine(self.l_brow, l_brow_shift, new_shape, borderMode=cv.BORDER_REPLICATE)
+        elif overlay.has_l_brow == -1:
+            l_brow = np.zeros(rot_hair_back.shape, dtype=np.uint8)
+        else:
+            l_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_l_brow]])
+            l_brow = cv.warpAffine(overlay.l_brow, l_brow_shift, new_shape, borderMode=cv.BORDER_REPLICATE)
+
+        if overlay.has_r_brow == 0:
+            r_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_r_brow]])
+            r_brow = cv.warpAffine(self.r_brow, r_brow_shift, new_shape, borderMode=cv.BORDER_REPLICATE)
+        elif overlay.has_r_brow == -1:
+            r_brow = np.zeros(rot_hair_back.shape, dtype=np.uint8)
+        else:
+            r_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_r_brow]])
+            r_brow = cv.warpAffine(overlay.r_brow, r_brow_shift, new_shape, borderMode=cv.BORDER_REPLICATE)
 
         self.res = rot_hair_back
-        self.res = utils.blend_transparent(self.res, self.background)
 
-        face = utils.blend_transparent(self.head, self.mouth[mouth_shape])  # голова + рот
+        if overlay.has_background == 0:
+            self.res = utils.blend_transparent(self.res, self.background)
+        elif overlay.has_background == 1:
+            self.res = utils.blend_transparent(self.res, overlay.background)
+
+        if overlay.has_head == 0:
+            face = self.head
+        elif overlay.has_head == -1:
+            face = np.zeros(rot_hair_back.shape, dtype=np.uint8)
+        else:
+            face = overlay.head
+
+        if overlay.has_mouth == 0:
+            face = utils.blend_transparent(face, self.mouth[mouth_shape])  # голова + рот
+        elif overlay.has_mouth == 1:
+            face = utils.blend_transparent(face, overlay.mouth)  # голова + рот
         brows = cv.bitwise_or(r_brow, l_brow)
         face = utils.blend_transparent(face, brows)  # голова + рот + брови
 
-        r_eye = make_eye(self.r_eye[r_eye_s], self.r_eye_white[r_eye_s], self.cur_r_pupil, new_shape, self.r_eye_pupil)
-        l_eye = make_eye(self.l_eye[l_eye_s], self.l_eye_white[l_eye_s], self.cur_l_pupil, new_shape, self.l_eye_pupil)
+        if overlay.has_r_eye == 0:
+            r_eye = make_eye(self.r_eye[r_eye_s], self.r_eye_white[r_eye_s], self.cur_r_pupil, new_shape,
+                             self.r_eye_pupil)
+        elif overlay.has_r_eye == -1:
+            r_eye = np.zeros(rot_hair_back.shape, dtype=np.uint8)
+        else:
+            r_eye = overlay.r_eye
+
+        if overlay.has_l_eye == 0:
+            l_eye = make_eye(self.l_eye[l_eye_s], self.l_eye_white[l_eye_s], self.cur_l_pupil, new_shape,
+                             self.l_eye_pupil)
+        elif overlay.has_l_eye == -1:
+            l_eye = np.zeros(rot_hair_back.shape, dtype=np.uint8)
+        else:
+            l_eye = overlay.l_eye
         eyes = cv.bitwise_or(r_eye, l_eye)
 
         face = utils.blend_transparent(face, eyes)  # голова + рот + брови + глаза
-        face = utils.blend_transparent(face, self.hair)  # голова + рот + брови + глаза + волосы
+
+        if overlay.has_hair == 0:
+            face = utils.blend_transparent(face, self.hair)  # голова + рот + брови + глаза + волосы
+        elif overlay.has_hair == 1:
+            face = utils.blend_transparent(face, overlay.hair)
         face = cv.warpAffine(face, rot, new_shape, flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
         face = cv.cvtColor(face, cv.COLOR_BGR2BGRA)
 
@@ -99,6 +158,9 @@ class Animator:
 
     def display(self):
         cv.imshow("Animezator", self.res)
+
+    def change_overlay(self, overlay_id):
+        self.cur_overlay = overlay_id
 
 
 def make_eye(eye, eye_white, pupil_pos, new_shape, pupil):

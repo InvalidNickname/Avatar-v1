@@ -4,8 +4,10 @@ import dlib
 import cv2 as cv
 import math
 import numpy as np
+
 import animator as anim
 import utils
+import json
 
 
 def get_mouth_shape(upper_point, lower_point, rel_h):
@@ -43,10 +45,13 @@ def get_pupil_pos(eye_area, right_point, left_point):
 
 
 def main():
+    with open("data/overlays.json", "r") as read_file:
+        overlays = json.load(read_file)
+
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor("data/model.dat")
 
-    animator = anim.Animator()
+    animator = anim.Animator(overlays)
 
     cap = cv.VideoCapture(0)
     if not cap.isOpened():
@@ -105,6 +110,10 @@ def main():
         key = cv.waitKey(1)
         if key == ord('q'):
             break
+        else:
+            for overlay_key in overlays:
+                if key == ord(overlay_key["key"]):
+                    animator.change_overlay(overlay_key["id"])
 
     cap.release()
     cv.destroyAllWindows()
