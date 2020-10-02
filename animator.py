@@ -1,4 +1,5 @@
 import cv2 as cv
+import random
 
 from overlay import *
 from limits import *
@@ -10,14 +11,44 @@ class Animator:
     cur_r_brow = 0
     cur_r_pupil = 0
     cur_l_pupil = 0
+    cur_r_eye_shape = 3
+    cur_l_eye_shape = 3
+    blinking = 0  # 0 - нет, -1 - закрывает глаза, 1 - открывает глаза
+    head_tilt = 0
+    target_head_tilt = 0
     res = None
 
     def __init__(self, overlays):
         self.imgs = Overlay(overlays)
 
+    def blink(self):
+        if self.blinking == 1:
+            if self.cur_r_eye_shape < 3:
+                self.cur_r_eye_shape += 1
+            else:
+                self.blinking = 0
+            if self.cur_l_eye_shape < 3:
+                self.cur_l_eye_shape += 1
+            else:
+                self.blinking = 0
+        else:
+            if self.blinking == 0:
+                self.blinking = -1
+            if self.cur_r_eye_shape > 0:
+                self.cur_r_eye_shape -= 1
+            else:
+                self.blinking = 1
+                self.cur_r_eye_shape += 1
+            if self.cur_l_eye_shape > 0:
+                self.cur_l_eye_shape -= 1
+            else:
+                self.blinking = 1
+                self.cur_l_eye_shape += 1
+
     def animate(self, angle, l_brow_pos, r_brow_pos, r_pupil_pos, l_pupil_pos):
+        self.head_tilt = angle
         # поворачиваем лицо
-        self.cur_tilt = move_slowly(angle, self.cur_tilt, 3)
+        self.cur_tilt = move_slowly(self.head_tilt, self.cur_tilt, 3)
         self.cur_tilt = set_limits(self.cur_tilt, LIMIT_HEAD_TILT, -LIMIT_HEAD_TILT)
         # двигаем брови
         self.cur_l_brow = move_slowly(l_brow_pos, self.cur_l_brow, 2)
@@ -27,6 +58,23 @@ class Animator:
         # двигаем зрачки
         self.cur_r_pupil = move_slowly(r_pupil_pos, self.cur_r_pupil, 2)
         self.cur_l_pupil = move_slowly(l_pupil_pos, self.cur_l_pupil, 2)
+
+    def standby_animate(self):
+        if abs(self.target_head_tilt - self.head_tilt) < 0.05:
+            self.target_head_tilt = random.random() * 20 - 10
+        self.head_tilt = move_slowly(self.target_head_tilt, self.head_tilt, 7)
+        self.animate(self.head_tilt, 0, 0, 0, 0)
+
+    def standby(self, animate):
+        if animate:
+            self.standby_animate()
+        if self.blinking == 0:
+            self.cur_r_eye_shape = 3
+            self.cur_l_eye_shape = 3
+        else:
+            self.blink()
+        self.put_mask(0, 3, 3)
+        self.display()
 
     def put_mask(self, mouth_shape, r_eye_s, l_eye_s):
         bmode = cv.BORDER_REPLICATE
@@ -52,8 +100,13 @@ class Animator:
         brows = cv.bitwise_or(r_brow, l_brow)
         face = utils.blend_transparent(face, brows)  # голова + рот + брови
 
-        r_eye = make_eye(self.cur_r_pupil, self.imgs, r_eye_s, "r")
-        l_eye = make_eye(self.cur_l_pupil, self.imgs, l_eye_s, "l")
+        if self.blinking == 0:
+            self.cur_r_eye_shape = r_eye_s
+            self.cur_l_eye_shape = l_eye_s
+        else:
+            self.blink()
+        r_eye = make_eye(self.cur_r_pupil, self.imgs, self.cur_r_eye_shape, "r")
+        l_eye = make_eye(self.cur_l_pupil, self.imgs, self.cur_l_eye_shape, "l")
         eyes = cv.bitwise_or(r_eye, l_eye)
 
         face = utils.blend_transparent(face, eyes)  # голова + рот + брови + глаза

@@ -4,6 +4,8 @@ import dlib
 import cv2 as cv
 import math
 import numpy as np
+import time
+import random
 
 import animator as anim
 import utils
@@ -44,6 +46,15 @@ def get_pupil_pos(eye_area, right_point, left_point):
     return pupil_pos
 
 
+def check_blinking(prev_blink, next_blink, animator):
+    cur_time = time.time()
+    if prev_blink + next_blink < cur_time:
+        animator.blink()
+        prev_blink = cur_time
+        next_blink = random.random() * 2 + 3
+    return prev_blink, next_blink
+
+
 def main():
     with open("data/overlays.json", "r") as read_file:
         overlays = json.load(read_file)
@@ -52,6 +63,11 @@ def main():
     predictor = dlib.shape_predictor("data/model.dat")
 
     animator = anim.Animator(overlays)
+
+    next_blink = random.random() * 2 + 3
+    prev_blink = time.time()
+
+    standby_counter = 0
 
     cap = cv.VideoCapture(0)
     if not cap.isOpened():
@@ -69,6 +85,8 @@ def main():
         # обнаружение лица
         rects = detector(gray, 1)
         if rects:
+            # сброс счётчика автономного режима
+            standby_counter = 0
             # определение точек лица
             shape = predictor(gray, rects[0])
             shape = face_utils.shape_to_np(shape)
@@ -99,12 +117,20 @@ def main():
             # брови
             left_brow_pos_delta = (utils.length(shape[35], shape[24]) / rel_h - 1.5) * 10
             right_brow_pos_delta = (utils.length(shape[35], shape[19]) / rel_h - 1.5) * 10
-            # отрисовка и отображение
+            # отрисовка
             animator.animate(alpha, left_brow_pos_delta * 2, right_brow_pos_delta * 2, r_pupil_pos, l_pupil_pos)
+            # проверка моргания
+            prev_blink, next_blink = check_blinking(prev_blink, next_blink, animator)
             animator.put_mask(mouth_shape, right_eye_shape, left_eye_shape)
+            # отображение
             animator.display()
         else:
+            if standby_counter == 0:
+                standby_counter = time.time()
             cv.putText(frame, "Face not found", (20, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 32, 32))
+            prev_blink, next_blink = check_blinking(prev_blink, next_blink, animator)
+            # если лицо не найдено через 3 секунды - анимация автономного режима, иначе просто моргаем
+            animator.standby(time.time() - standby_counter > 3)
 
         cv.imshow("Output", frame)
         key = cv.waitKey(1)
