@@ -1,5 +1,6 @@
 import cv2 as cv
 import random
+import math
 
 from overlay import *
 from limits import *
@@ -16,6 +17,8 @@ class Animator:
     blinking = 0  # 0 - нет, -1 - закрывает глаза, 1 - открывает глаза
     head_tilt = 0
     target_head_tilt = 0
+    cur_head_offset = 0
+    head_central_y = -1
     res = None
 
     def __init__(self, overlays):
@@ -45,8 +48,10 @@ class Animator:
                 self.blinking = 1
                 self.cur_l_eye_shape += 1
 
-    def animate(self, angle, l_brow_pos, r_brow_pos, r_pupil_pos, l_pupil_pos):
+    def animate(self, angle, l_brow_pos, r_brow_pos, r_pupil_pos, l_pupil_pos, target_head_offset):
         self.head_tilt = angle
+        # сдвигаем лицо по вертикали
+        self.cur_head_offset = move_slowly(target_head_offset, self.cur_head_offset, 4)
         # поворачиваем лицо
         self.cur_tilt = move_slowly(self.head_tilt, self.cur_tilt, 3)
         self.cur_tilt = set_limits(self.cur_tilt, LIMIT_HEAD_TILT, -LIMIT_HEAD_TILT)
@@ -63,7 +68,7 @@ class Animator:
         if abs(self.target_head_tilt - self.head_tilt) < 0.05:
             self.target_head_tilt = random.random() * 20 - 10
         self.head_tilt = move_slowly(self.target_head_tilt, self.head_tilt, 7)
-        self.animate(self.head_tilt, 0, 0, 0, 0)
+        self.animate(self.head_tilt, 0, 0, 0, 0, self.head_central_y)
 
     def standby(self, animate):
         if animate:
@@ -79,8 +84,13 @@ class Animator:
     def put_mask(self, mouth_shape, r_eye_s, l_eye_s):
         bmode = cv.BORDER_REPLICATE
 
-        rot = cv.getRotationMatrix2D((self.imgs.shape()[0] / 2, self.imgs.shape()[1] / 2 + HEAD_ROT_POINT_Y),
-                                     self.cur_tilt, 1)
+        head_offset = (self.cur_head_offset - self.head_central_y) * HEAD_MAX_Y_OFFSET / 250
+
+        head_shift = np.float32([[1, 0, 0], [0, 1, head_offset]])
+        rot = cv.getRotationMatrix2D(
+            (self.imgs.shape()[0] / 2, self.imgs.shape()[1] / 2 + HEAD_ROT_POINT_Y), self.cur_tilt, 1)
+        rot = np.vstack([rot, [0, 0, 1]])
+        rot = np.matmul(head_shift, rot)
 
         rot_hair_back = cv.warpAffine(self.imgs.get_img("hair_back"), rot, self.imgs.warp_shape(),
                                       flags=cv.INTER_LINEAR, borderMode=bmode)

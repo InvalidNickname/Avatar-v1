@@ -12,7 +12,7 @@ import utils
 import json
 
 
-def get_mouth_shape(upper_point, lower_point, rel_h):
+def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth):
     dst = utils.length(upper_point, lower_point) / rel_h
     mouth_shape = 3
     if dst < 0.1:
@@ -20,7 +20,15 @@ def get_mouth_shape(upper_point, lower_point, rel_h):
     elif dst < 0.2:
         mouth_shape = 1
     elif dst < 0.3:
-        mouth_shape = 2
+        if mean_mouth < 30:
+            mouth_shape = 2
+        else:
+            mouth_shape = 4
+    else:
+        if mean_mouth < 30:
+            mouth_shape = 3
+        else:
+            mouth_shape = 5
     return mouth_shape
 
 
@@ -84,18 +92,24 @@ def main():
         gray = cv.equalizeHist(gray)
         # обнаружение лица
         rects = detector(gray, 1)
+        head_center = frame.shape[0] / 2
         if rects:
             # сброс счётчика автономного режима
             standby_counter = 0
             # определение точек лица
             shape = predictor(gray, rects[0])
             shape = face_utils.shape_to_np(shape)
+            # если не все лицо в кадре - скип
+            if shape.shape[0] != 68:
+                continue
             # отрисовка лица и точек на оригинале
             (x, y, w, h) = face_utils.rect_to_bb(rects[0])
             cv.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 0), 2)
             for (x, y) in shape:
                 cv.circle(frame, (x, y), 1, (0, 0, 255), -1)
             # начинаем изврат
+            if animator.head_central_y == -1:
+                animator.head_central_y = frame.shape[0]
             # все размеры определяем относительно длины носа, т.к. она неизменна
             rel_h = shape[33][1] - shape[27][1]
             # текушее увеличение лица
@@ -104,7 +118,10 @@ def main():
             b = utils.length(shape[45], shape[35])
             alpha = math.degrees(math.acos(a / b) - 1)
             # определяем положение рта, точки 62 и 66
-            mouth_shape = get_mouth_shape(shape[62], shape[66], rel_h)
+            mouth_region = gray[shape[62][1]:shape[66][1], shape[48][0]:shape[54][0]].copy()
+            cv.threshold(mouth_region, 80, 256, cv.THRESH_BINARY, mouth_region)
+            mean_mouth = cv.mean(mouth_region)
+            mouth_shape = get_mouth_shape(shape[62], shape[66], rel_h, mean_mouth[0])
             # определяем положение глаз
             # правый глаз - точки 37, 41
             right_eye_shape = get_eye_shape(shape[37], shape[41], rel_h)
@@ -117,8 +134,11 @@ def main():
             # брови
             left_brow_pos_delta = (utils.length(shape[35], shape[24]) / rel_h - 1.5) * 10
             right_brow_pos_delta = (utils.length(shape[35], shape[19]) / rel_h - 1.5) * 10
+            # сдвиг головы по вертикали
+            head_center = shape[33][1]
             # отрисовка
-            animator.animate(alpha, left_brow_pos_delta * 2, right_brow_pos_delta * 2, r_pupil_pos, l_pupil_pos)
+            animator.animate(alpha, left_brow_pos_delta * 2, right_brow_pos_delta * 2, r_pupil_pos, l_pupil_pos,
+                             shape[33][1])
             # проверка моргания
             prev_blink, next_blink = check_blinking(prev_blink, next_blink, animator)
             animator.put_mask(mouth_shape, right_eye_shape, left_eye_shape)
@@ -136,6 +156,8 @@ def main():
         key = cv.waitKey(1)
         if key == ord('q'):
             break
+        elif key == ord('r'):
+            animator.head_central_y = head_center
         else:
             for overlay_key in overlays:
                 if key == ord(overlay_key["key"]):
