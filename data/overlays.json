@@ -33,7 +33,8 @@
       "l_eye_1": "data/animation/left_eye/eye_2.png",
       "l_eye_2": "data/animation/left_eye/eye_3.png",
       "l_eye_3": "data/animation/left_eye/eye_4.png",
-      "hair": "data/animation/hair.png"
+      "hair": "data/animation/hair.png",
+      "head_shadow": "data/animation/head_shadow.png"
     }
   },
   {
@@ -68,7 +69,8 @@
       "l_eye_0": "",
       "l_eye_1": "",
       "l_eye_2": "",
-      "l_eye_3": ""
+      "l_eye_3": "",
+      "head_shadow": ""
     }
   }
 ]

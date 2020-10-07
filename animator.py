@@ -105,6 +105,11 @@ class Animator:
 
         self.res = utils.blend_transparent(self.res, self.imgs.get_img("background"))
 
+        shadow = cv.warpAffine(self.imgs.get_img("head_shadow"), rot, self.imgs.warp_shape(), flags=cv.INTER_LINEAR,
+                               borderMode=bmode)
+        shadow = cv.bitwise_and(self.imgs.get_img("background"), shadow)
+        self.res = utils.blend_transparent(self.res, shadow)
+
         face = self.imgs.get_img("head")
         face = utils.blend_transparent(face, self.imgs.get_img("mouth_" + str(mouth_shape)))  # голова + рот
         brows = cv.bitwise_or(r_brow, l_brow)
