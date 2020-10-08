@@ -1,6 +1,5 @@
 import cv2 as cv
 import random
-import math
 
 from overlay import *
 from limits import *

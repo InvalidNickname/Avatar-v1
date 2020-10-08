@@ -29,17 +29,14 @@ def blend_partial(background, overlay, y_shift, height):
 
 
 def blend_transparent(background, overlay):
-    if overlay.max == 0:
-        return background
-    else:
-        height = background.shape[1]
-        n = 8
-        res = np.zeros(background.shape, dtype=np.uint8)
-        for i in range(n):
-            shift = int(height * i / n)
-            res[:, shift:int(height * (i + 1) / n), :] = \
-                blend_partial(background[:, shift:int(height * (i + 1) / n), :], overlay, shift, int(height / n))
-        return res
+    height = background.shape[1]
+    n = 8
+    res = np.zeros(background.shape, dtype=np.uint8)
+    for i in range(n):
+        shift = int(height * i / n)
+        res[:, shift:int(height * (i + 1) / n), :] = \
+            blend_partial(background[:, shift:int(height * (i + 1) / n), :], overlay, shift, int(height / n))
+    return res
 
 
 def load_image(path):

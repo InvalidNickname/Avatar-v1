@@ -9,12 +9,12 @@
       "head": "data/animation/head.png",
       "l_brow": "data/animation/left_brow.png",
       "r_brow": "data/animation/right_brow.png",
-      "mouth_0": "data/animation/mouth/1.png",
-      "mouth_1": "data/animation/mouth/2.png",
-      "mouth_2": "data/animation/mouth/3.png",
-      "mouth_3": "data/animation/mouth/4.png",
-      "mouth_4": "data/animation/mouth/5.png",
-      "mouth_5": "data/animation/mouth/6.png",
+      "mouth_0": "data/animation/mouth/teeth/1.png",
+      "mouth_1": "data/animation/mouth/teeth/2.png",
+      "mouth_2": "data/animation/mouth/teeth/3.png",
+      "mouth_3": "data/animation/mouth/teeth/4.png",
+      "mouth_4": "data/animation/mouth/without_teeth/3.png",
+      "mouth_5": "data/animation/mouth/without_teeth/4.png",
       "r_eye_white_0": "data/animation/right_eye/white_1.png",
       "r_eye_white_1": "data/animation/right_eye/white_2.png",
       "r_eye_white_2": "data/animation/right_eye/white_3.png",
@@ -69,8 +69,7 @@
       "l_eye_0": "",
       "l_eye_1": "",
       "l_eye_2": "",
-      "l_eye_3": "",
-      "head_shadow": ""
+      "l_eye_3": ""
     }
   }
 ]
