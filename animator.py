@@ -91,20 +91,20 @@ class Animator:
         rot = np.vstack([rot, [0, 0, 1]])
         rot = np.matmul(head_shift, rot)
 
-        rot_hair_back = cv.warpAffine(self.imgs.get_img("hair_back"), rot, self.imgs.warp_shape(),
+        rot_hair_back = cv.warpAffine(self.imgs.get_img("hair_back"), rot, self.imgs.w_shape(),
                                       flags=cv.INTER_LINEAR, borderMode=bmode)
 
         l_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_l_brow]])
-        l_brow = cv.warpAffine(self.imgs.get_img("l_brow"), l_brow_shift, self.imgs.warp_shape(), borderMode=bmode)
+        l_brow = cv.warpAffine(self.imgs.get_img("l_brow"), l_brow_shift, self.imgs.w_shape(), borderMode=bmode)
 
         r_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_r_brow]])
-        r_brow = cv.warpAffine(self.imgs.get_img("r_brow"), r_brow_shift, self.imgs.warp_shape(), borderMode=bmode)
+        r_brow = cv.warpAffine(self.imgs.get_img("r_brow"), r_brow_shift, self.imgs.w_shape(), borderMode=bmode)
 
         self.res = rot_hair_back
 
         self.res = utils.blend_transparent(self.res, self.imgs.get_img("background"))
 
-        shadow = cv.warpAffine(self.imgs.get_img("head_shadow"), rot, self.imgs.warp_shape(), flags=cv.INTER_LINEAR,
+        shadow = cv.warpAffine(self.imgs.get_img("head_shadow"), rot, self.imgs.w_shape(), flags=cv.INTER_LINEAR,
                                borderMode=bmode)
         shadow = cv.bitwise_and(self.imgs.get_img("background"), shadow)
         self.res = utils.blend_transparent(self.res, shadow)
@@ -126,7 +126,7 @@ class Animator:
         face = utils.blend_transparent(face, eyes)  # голова + рот + брови + глаза
 
         face = utils.blend_transparent(face, self.imgs.get_img("hair"))  # голова + рот + брови + глаза + волосы
-        face = cv.warpAffine(face, rot, self.imgs.warp_shape(), flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
+        face = cv.warpAffine(face, rot, self.imgs.w_shape(), flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
         face = cv.cvtColor(face, cv.COLOR_BGR2BGRA)
 
         self.res = utils.blend_transparent(self.res, face)
@@ -140,7 +140,7 @@ class Animator:
 
 def make_eye(pupil_pos, imgs, eye_shape, l_r):
     pupil_shift = np.float32([[1, 0, pupil_pos], [0, 1, 0]])
-    eye_pupil = cv.warpAffine(imgs.get_img(l_r + "_eye_pupil"), pupil_shift, imgs.warp_shape(),
+    eye_pupil = cv.warpAffine(imgs.get_img(l_r + "_eye_pupil"), pupil_shift, imgs.w_shape(),
                               borderMode=cv.BORDER_REPLICATE)
     eye_pupil = cv.copyTo(eye_pupil, imgs.get_img(l_r + "_eye_white_" + str(eye_shape)))
     res_eye = utils.blend_transparent(imgs.get_img(l_r + "_eye_white_" + str(eye_shape)), eye_pupil)
