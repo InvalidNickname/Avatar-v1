@@ -12,21 +12,35 @@ import utils
 import json
 
 
-def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth):
+def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_rot):
     dst = utils.length(upper_point, lower_point) / rel_h
+    # угол поворота уголков рта относительно лица
+    alpha = math.degrees(math.atan((corners[2][1] - corners[3][1]) / (corners[3][0] - corners[2][0]))) - face_rot
     if dst < 0.1:
-        mouth_shape = 0
+        if alpha > 15:
+            mouth_shape = 6
+        else:
+            mouth_shape = 0
     elif dst < 0.2:
-        mouth_shape = 1
+        if alpha > 15:
+            mouth_shape = 7
+        else:
+            mouth_shape = 1
     elif dst < 0.3:
         if mean_mouth < 200:
-            mouth_shape = 2
+            if alpha > 15:
+                mouth_shape = 8
+            else:
+                mouth_shape = 2
         else:
             # зубы показаны полностью
             mouth_shape = 4
     else:
         if mean_mouth < 200:
-            mouth_shape = 3
+            if alpha > 15:
+                mouth_shape = 9
+            else:
+                mouth_shape = 3
         else:
             # зубы показаны полностью
             mouth_shape = 5
@@ -72,9 +86,14 @@ def draw_landmarks(frame, shape):
     cv.circle(frame, (shape[41][0], shape[41][1]), 1, (255, 0, 0), -1)
     cv.circle(frame, (shape[44][0], shape[44][1]), 1, (255, 0, 0), -1)
     cv.circle(frame, (shape[46][0], shape[46][1]), 1, (255, 0, 0), -1)
-    # точки рта
+    # верх и низ рта
     cv.circle(frame, (shape[62][0], shape[62][1]), 1, (255, 255, 0), -1)
     cv.circle(frame, (shape[66][0], shape[66][1]), 1, (255, 255, 0), -1)
+    # уголки рта
+    cv.circle(frame, (shape[48][0], shape[48][1]), 1, (0, 255, 255), -1)
+    cv.circle(frame, (shape[60][0], shape[60][1]), 1, (0, 255, 255), -1)
+    cv.circle(frame, (shape[64][0], shape[64][1]), 1, (0, 255, 255), -1)
+    cv.circle(frame, (shape[54][0], shape[54][1]), 1, (0, 255, 255), -1)
     # точки бровей
     cv.circle(frame, (shape[27][0], shape[27][1]), 1, (0, 255, 0), -1)
     cv.circle(frame, (shape[21][0], shape[21][1]), 1, (0, 255, 0), -1)
@@ -130,15 +149,16 @@ def main():
             # все размеры определяем относительно длины носа, т.к. она неизменна
             rel_h = shape[33][1] - shape[27][1]
             # текушее увеличение лица
-            # определяем поворот лица по двум точкам (35 и 45) - дальний край левого глаза и левый край носа
-            a = shape[45][0] - shape[35][0]
-            b = utils.length(shape[45], shape[35])
-            alpha = math.degrees(math.acos(a / b) - 1)
+            # определяем поворот лица по двум точкам (37 и 46) - дальние края глаз
+            a = shape[45][0] - shape[36][0]
+            b = shape[36][1] - shape[45][1]
+            alpha = math.degrees(math.atan(b / a))
             # определяем положение рта, точки 62 и 66
             mouth_region = gray[shape[62][1]:shape[66][1], shape[61][0]:shape[63][0]].copy()
             cv.threshold(mouth_region, 80, 256, cv.THRESH_BINARY, mouth_region)
             mean_mouth = cv.mean(mouth_region)
-            mouth_shape = get_mouth_shape(shape[62], shape[66], rel_h, mean_mouth[0])
+            mouth_corners = (shape[48], shape[60], shape[64], shape[54])
+            mouth_shape = get_mouth_shape(shape[62], shape[66], rel_h, mean_mouth[0], mouth_corners, alpha)
             # определяем положение глаз
             # правый глаз - точки 37, 41
             right_eye_shape = get_eye_shape(shape[37], shape[41], rel_h)
@@ -171,9 +191,9 @@ def main():
 
         cv.imshow("Output", frame)
         key = cv.waitKey(1)
-        if key == ord('q'):
+        if key == ord('q') or key == ord('é'):
             break
-        elif key == ord('r'):
+        elif key == ord('r') or key == ord('ê'):
             animator.head_central_y = head_center
         else:
             for overlay_key in overlays:
