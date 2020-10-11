@@ -19,17 +19,23 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
     if dst < 0.1:
         if alpha > 15:
             mouth_shape = 6
+        elif alpha < 0:
+            mouth_shape = 10
         else:
             mouth_shape = 0
     elif dst < 0.2:
         if alpha > 15:
             mouth_shape = 7
+        elif alpha < 0:
+            mouth_shape = 11
         else:
             mouth_shape = 1
     elif dst < 0.3:
         if mean_mouth < 200:
             if alpha > 15:
                 mouth_shape = 8
+            elif alpha < 0:
+                mouth_shape = 12
             else:
                 mouth_shape = 2
         else:
@@ -39,6 +45,8 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
         if mean_mouth < 200:
             if alpha > 15:
                 mouth_shape = 9
+            elif alpha < 0:
+                mouth_shape = 13
             else:
                 mouth_shape = 3
         else:

@@ -5,7 +5,8 @@ import utils
 
 def get_part_name_for_loading(part):
     if part == "mouth":
-        return ["mouth_1", "mouth_2", "mouth_3", "mouth_4", "mouth_5", "mouth_6", "mouth_7", "mouth_8", "mouth_9"]
+        return ["mouth_1", "mouth_2", "mouth_3", "mouth_4", "mouth_5", "mouth_6", "mouth_7", "mouth_8", "mouth_9",
+                "mouth_10", "mouth_11", "mouth_12", "mouth_13"]
     elif part == "r_eye_white":
         return ["r_eye_white_0", "r_eye_white_1", "r_eye_white_2", "r_eye_white_3"]
     elif part == "l_eye_white":
