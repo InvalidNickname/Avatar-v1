@@ -9,6 +9,8 @@ class Animator:
     cur_tilt = 0
     cur_l_brow = 0
     cur_r_brow = 0
+    cur_r_brow_tilt = 0
+    cur_l_brow_tilt = 0
     cur_r_pupil = 0
     cur_l_pupil = 0
     cur_r_eye_shape = 3
@@ -47,7 +49,8 @@ class Animator:
                 self.blinking = 1
                 self.cur_l_eye_shape += 1
 
-    def animate(self, angle, l_brow_pos, r_brow_pos, r_pupil_pos, l_pupil_pos, target_head_offset):
+    def animate(self, angle, l_brow_pos, r_brow_pos, r_pupil_pos, l_pupil_pos, target_head_offset, l_brow_tilt,
+                r_brow_tilt):
         self.head_tilt = angle
         # сдвигаем лицо по вертикали
         self.cur_head_offset = move_slowly(target_head_offset, self.cur_head_offset, 4)
@@ -57,8 +60,10 @@ class Animator:
         # двигаем брови
         self.cur_l_brow = move_slowly(l_brow_pos, self.cur_l_brow, 2)
         self.cur_l_brow = set_limits(self.cur_l_brow, LIMIT_BROW_HIGH, LIMIT_BROW_LOW)
+        self.cur_l_brow_tilt = move_slowly(self.cur_l_brow_tilt, l_brow_tilt, 2)
         self.cur_r_brow = move_slowly(r_brow_pos, self.cur_r_brow, 2)
         self.cur_r_brow = set_limits(self.cur_r_brow, LIMIT_BROW_HIGH, LIMIT_BROW_LOW)
+        self.cur_r_brow_tilt = move_slowly(self.cur_r_brow_tilt, r_brow_tilt, 2)
         # двигаем зрачки
         self.cur_r_pupil = move_slowly(r_pupil_pos, self.cur_r_pupil, 2)
         self.cur_l_pupil = move_slowly(l_pupil_pos, self.cur_l_pupil, 2)
@@ -67,7 +72,7 @@ class Animator:
         if abs(self.target_head_tilt - self.head_tilt) < 0.05:
             self.target_head_tilt = random.random() * 20 - 10
         self.head_tilt = move_slowly(self.target_head_tilt, self.head_tilt, 7)
-        self.animate(self.head_tilt, 0, 0, 0, 0, self.head_central_y)
+        self.animate(self.head_tilt, 0, 0, 0, 0, self.head_central_y, 0, 0)
 
     def standby(self, animate):
         if animate:
@@ -94,11 +99,11 @@ class Animator:
         rot_hair_back = cv.warpAffine(self.imgs.get_img("hair_back"), rot, self.imgs.w_shape(),
                                       flags=cv.INTER_LINEAR, borderMode=bmode)
 
-        l_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_l_brow]])
-        l_brow = cv.warpAffine(self.imgs.get_img("l_brow"), l_brow_shift, self.imgs.w_shape(), borderMode=bmode)
+        l_brow_mat = make_brow_warp_matrix(self.cur_l_brow, L_BROW_ROT_X, L_BROW_ROT_Y, self.cur_l_brow_tilt)
+        l_brow = cv.warpAffine(self.imgs.get_img("l_brow"), l_brow_mat, self.imgs.w_shape(), borderMode=bmode)
 
-        r_brow_shift = np.float32([[1, 0, 0], [0, 1, -self.cur_r_brow]])
-        r_brow = cv.warpAffine(self.imgs.get_img("r_brow"), r_brow_shift, self.imgs.w_shape(), borderMode=bmode)
+        r_brow_mat = make_brow_warp_matrix(self.cur_r_brow, R_BROW_ROT_X, R_BROW_ROT_Y, self.cur_r_brow_tilt)
+        r_brow = cv.warpAffine(self.imgs.get_img("r_brow"), r_brow_mat, self.imgs.w_shape(), borderMode=bmode)
 
         self.res = rot_hair_back
 
@@ -162,3 +167,11 @@ def set_limits(current, upper_limit, lower_limit):
     elif current < lower_limit:
         current = lower_limit
     return current
+
+
+def make_brow_warp_matrix(y_offset, rot_x, rot_y, angle):
+    brow_shift = np.float32([[1, 0, 0], [0, 1, -y_offset]])
+    brow_rot = cv.getRotationMatrix2D((rot_x, rot_y), angle, 1)
+    brow_rot = np.vstack([brow_rot, [0, 0, 1]])
+    brow_rot = np.matmul(brow_shift, brow_rot)
+    return brow_rot
