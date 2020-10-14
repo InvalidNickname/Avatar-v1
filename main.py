@@ -173,7 +173,7 @@ def main():
             mouth_corners = (shape[48], shape[60], shape[64], shape[54])
             mouth_shape = get_mouth_shape(shape[62], shape[66], rel_h, mean_mouth[0], mouth_corners, alpha)
             # определяем положение глаз
-            # правый глаз - точки 37, 41
+            # правый глаз - точки 38, 42
             right_eye_shape = get_eye_shape(shape[37], shape[41], rel_h)
             right_eye_area = gray[shape[37][1]:shape[41][1], shape[36][0]:shape[39][0]]
             r_pupil_pos, dst = get_pupil_pos(right_eye_area, shape[39], shape[36])
@@ -186,20 +186,20 @@ def main():
             if left_eye_shape == 1 and dst > (shape[44][0] - shape[42][0]) / 2:
                 left_eye_shape = 0
             # брови
-            left_brow_pos_delta = (utils.length(shape[27], shape[21]) / rel_h - 0.3) * 10
-            right_brow_pos_delta = (utils.length(shape[27], shape[22]) / rel_h - 0.3) * 10
+            right_brow_pos_delta = (utils.length(shape[37], shape[19]) / rel_h - 0.3) * 40
+            left_brow_pos_delta = (utils.length(shape[44], shape[24]) / rel_h - 0.3) * 40
             # наклон бровей
             a = shape[18][0] - shape[20][0]
             b = shape[20][1] - shape[18][1]
-            r_brow_tilt = math.degrees(math.atan(b / a)) - alpha
+            l_brow_tilt = math.degrees(math.atan(b / a)) - alpha
             a = shape[23][0] - shape[25][0]
             b = shape[25][1] - shape[23][1]
-            l_brow_tilt = math.degrees(math.atan(b / a)) - alpha
+            r_brow_tilt = math.degrees(math.atan(b / a)) - alpha
             # сдвиг головы по вертикали
             head_center = shape[33][1]
             # отрисовка
-            animator.animate(alpha, left_brow_pos_delta * 2, right_brow_pos_delta * 2, r_pupil_pos, l_pupil_pos,
-                             shape[33][1], l_brow_tilt, r_brow_tilt)
+            animator.animate(alpha, left_brow_pos_delta, right_brow_pos_delta, r_pupil_pos, l_pupil_pos, shape[33][1],
+                             l_brow_tilt, r_brow_tilt)
             # проверка моргания
             prev_blink, next_blink = check_blinking(prev_blink, next_blink, animator)
             animator.put_mask(mouth_shape, right_eye_shape, left_eye_shape)
