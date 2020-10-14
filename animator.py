@@ -105,14 +105,15 @@ class Animator:
         r_brow_mat = make_brow_warp_matrix(self.cur_r_brow, R_BROW_ROT_X, R_BROW_ROT_Y, self.cur_r_brow_tilt)
         r_brow = cv.warpAffine(self.imgs.get_img("r_brow"), r_brow_mat, self.imgs.w_shape(), borderMode=bmode)
 
-        self.res = rot_hair_back
+        self.res = self.imgs.get_img("background")
 
-        self.res = utils.blend_transparent(self.res, self.imgs.get_img("background"))
+        body = rot_hair_back
+        body = utils.blend_transparent(body, self.imgs.get_img("body"))
 
         shadow = cv.warpAffine(self.imgs.get_img("head_shadow"), rot, self.imgs.w_shape(), flags=cv.INTER_LINEAR,
                                borderMode=bmode)
         shadow = cv.bitwise_and(self.imgs.get_img("background"), shadow)
-        self.res = utils.blend_transparent(self.res, shadow)
+        body = utils.blend_transparent(body, shadow)
 
         face = self.imgs.get_img("head")
         face = utils.blend_transparent(face, self.imgs.get_img("mouth_" + str(mouth_shape)))  # голова + рот
@@ -134,7 +135,15 @@ class Animator:
         face = cv.warpAffine(face, rot, self.imgs.w_shape(), flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
         face = cv.cvtColor(face, cv.COLOR_BGR2BGRA)
 
-        self.res = utils.blend_transparent(self.res, face)
+        body = utils.blend_transparent(body, face)
+
+        body_shift = np.float32([[1, 0, 0], [0, 1, head_offset]])
+        body_rot = cv.getRotationMatrix2D((BODY_ROT_X, BODY_ROT_Y), self.head_tilt / 4, 1)
+        body_rot = np.vstack([body_rot, [0, 0, 1]])
+        body_rot = np.matmul(body_shift, body_rot)
+        body = cv.warpAffine(body, body_rot, self.imgs.w_shape(), flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
+
+        self.res = utils.blend_transparent(self.res, body)
 
     def display(self):
         cv.imshow("Animezator", self.res)

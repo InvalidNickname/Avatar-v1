@@ -4,8 +4,9 @@
     "id": 0,
     "key": "0",
     "replaces": {
-      "hair_back": "data/animation/hair_back.png",
       "background": "data/animation/background.png",
+      "body": "data/animation/body.png",
+      "hair_back": "data/animation/hair_back.png",
       "head": "data/animation/head.png",
       "l_brow": "data/animation/brows/left_brow.png",
       "r_brow": "data/animation/brows/right_brow.png",
