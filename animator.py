@@ -22,6 +22,9 @@ class Animator:
     head_central_y = -1
     res = None
 
+    cur_breathe = 0
+    breathe_status = 1
+
     def __init__(self, overlays):
         self.imgs = Overlay(overlays)
 
@@ -67,6 +70,8 @@ class Animator:
         # двигаем зрачки
         self.cur_r_pupil = move_slowly(r_pupil_pos, self.cur_r_pupil, 2)
         self.cur_l_pupil = move_slowly(l_pupil_pos, self.cur_l_pupil, 2)
+        # дыхание
+        self.cur_breathe, self.breathe_status = breathe(self.cur_breathe, self.breathe_status)
 
     def standby_animate(self):
         if abs(self.target_head_tilt - self.head_tilt) < 0.05:
@@ -116,9 +121,8 @@ class Animator:
         body = utils.blend_transparent(body, shadow)
 
         face = self.imgs.get_img("head")
-        face = utils.blend_transparent(face, self.imgs.get_img("mouth_" + str(mouth_shape)))  # голова + рот
-        brows = cv.bitwise_or(r_brow, l_brow)
-        face = utils.blend_transparent(face, brows)  # голова + рот + брови
+        brows = cv.bitwise_or(r_brow, l_brow)  # брови
+        brow_mouth = cv.bitwise_or(brows, self.imgs.get_img("mouth_" + str(mouth_shape)))  # брови + рот
 
         if self.blinking == 0:
             self.cur_r_eye_shape = r_eye_s
@@ -129,7 +133,11 @@ class Animator:
         l_eye = make_eye(self.cur_l_pupil, self.imgs, self.cur_l_eye_shape, "l")
         eyes = cv.bitwise_or(r_eye, l_eye)
 
-        face = utils.blend_transparent(face, eyes)  # голова + рот + брови + глаза
+        brows_mouth_eyes = cv.bitwise_or(eyes, brow_mouth)
+        face_shift = np.float32([[1, 0, 0], [0, 1, head_offset / 3]])
+        brows_mouth_eyes = cv.warpAffine(brows_mouth_eyes, face_shift, self.imgs.w_shape(), borderMode=bmode)
+
+        face = utils.blend_transparent(face, brows_mouth_eyes)  # голова + рот + брови + глаза
 
         face = utils.blend_transparent(face, self.imgs.get_img("hair"))  # голова + рот + брови + глаза + волосы
         face = cv.warpAffine(face, rot, self.imgs.w_shape(), flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
@@ -137,7 +145,7 @@ class Animator:
 
         body = utils.blend_transparent(body, face)
 
-        body_shift = np.float32([[1, 0, 0], [0, 1, head_offset]])
+        body_shift = np.float32([[1, 0, 0], [0, 1, head_offset + self.cur_breathe]])
         body_rot = cv.getRotationMatrix2D((BODY_ROT_X, BODY_ROT_Y), self.head_tilt / 4, 1)
         body_rot = np.vstack([body_rot, [0, 0, 1]])
         body_rot = np.matmul(body_shift, body_rot)
@@ -184,3 +192,19 @@ def make_brow_warp_matrix(y_offset, rot_x, rot_y, angle):
     brow_rot = np.vstack([brow_rot, [0, 0, 1]])
     brow_rot = np.matmul(brow_shift, brow_rot)
     return brow_rot
+
+
+def breathe(cur, status):
+    if status == 1:
+        if abs(cur - BREATHING_Y_OFFSET) > 0.01:
+            cur += BREATHING_SPD
+        else:
+            status = -1
+            cur -= BREATHING_SPD
+    else:
+        if abs(cur + BREATHING_Y_OFFSET) > 0.01:
+            cur -= BREATHING_SPD
+        else:
+            status = 1
+            cur += BREATHING_SPD
+    return cur, status

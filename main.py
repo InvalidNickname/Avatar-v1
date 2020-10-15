@@ -191,10 +191,10 @@ def main():
             # наклон бровей
             a = shape[18][0] - shape[20][0]
             b = shape[20][1] - shape[18][1]
-            l_brow_tilt = math.degrees(math.atan(b / a)) - alpha
+            l_brow_tilt = (alpha - math.degrees(math.atan(b / a))) / 2
             a = shape[23][0] - shape[25][0]
             b = shape[25][1] - shape[23][1]
-            r_brow_tilt = math.degrees(math.atan(b / a)) - alpha
+            r_brow_tilt = (alpha - math.degrees(math.atan(b / a))) / 2
             # сдвиг головы по вертикали
             head_center = shape[33][1]
             # отрисовка

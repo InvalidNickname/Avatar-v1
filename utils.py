@@ -2,6 +2,8 @@ import math
 import cv2 as cv
 import numpy as np
 
+from limits import *
+
 
 def length(p1, p2):
     return math.sqrt(math.pow(p1[0] - p2[0], 2) + math.pow(p1[1] - p2[1], 2))
@@ -40,4 +42,4 @@ def blend_transparent(background, overlay):
 
 
 def load_image(path):
-    return cv.resize(cv.imread(path, cv.IMREAD_UNCHANGED), (0, 0), fy=0.5, fx=0.5)
+    return cv.resize(cv.imread(path, cv.IMREAD_UNCHANGED), (0, 0), fy=1 / DOWNSCALING, fx=1 / DOWNSCALING)
