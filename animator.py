@@ -25,8 +25,8 @@ class Animator:
     cur_breathe = 0
     breathe_status = 1
 
-    def __init__(self, overlays):
-        self.imgs = Overlay(overlays)
+    def __init__(self, overlays, animations):
+        self.imgs = Overlay(overlays, animations)
 
     def blink(self):
         if self.blinking == 1:
@@ -157,7 +157,13 @@ class Animator:
         cv.imshow("Animezator", self.res)
 
     def change_overlay(self, overlay_id):
-        self.imgs.overlay_id = overlay_id
+        self.imgs.change_overlay(overlay_id)
+
+    def toggle_animation(self, animation_id):
+        self.imgs.toggle_animation(animation_id)
+
+    def update_animations(self):
+        self.imgs.update_animation()
 
 
 def make_eye(pupil_pos, imgs, eye_shape, l_r):

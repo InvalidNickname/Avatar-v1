@@ -6,6 +6,7 @@ import math
 import numpy as np
 import time
 import random
+import keyboard
 
 import animator as anim
 import utils
@@ -116,11 +117,13 @@ def draw_landmarks(frame, shape):
 def main():
     with open("data/overlays.json", "r") as read_file:
         overlays = json.load(read_file)
+    with open("data/toggleable_animations.json", "r") as read_file:
+        animations = json.load(read_file)
 
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor("data/model.dat")
 
-    animator = anim.Animator(overlays)
+    animator = anim.Animator(overlays, animations)
 
     next_blink = random.random() * 2 + 3
     prev_blink = time.time()
@@ -205,6 +208,8 @@ def main():
             animator.put_mask(mouth_shape, right_eye_shape, left_eye_shape)
             # отображение
             animator.display()
+            # обновление анимаций
+            animator.update_animations()
         else:
             if standby_counter == 0:
                 standby_counter = time.time()
@@ -214,15 +219,22 @@ def main():
             animator.standby(time.time() - standby_counter > 3)
 
         cv.imshow("Output", frame)
-        key = cv.waitKey(1)
-        if key == ord('q') or key == ord('é'):
+
+        if keyboard.is_pressed('alt+q'):
             break
-        elif key == ord('r') or key == ord('ê'):
+        elif keyboard.is_pressed('alt+r'):
             animator.head_central_y = head_center
         else:
             for overlay_key in overlays:
-                if key == ord(overlay_key["key"]):
+                if keyboard.is_pressed('alt+' + overlay_key["key"]):
                     animator.change_overlay(overlay_key["id"])
+                    break
+            for animation_key in animations:
+                if keyboard.is_pressed('alt+' + animation_key["key"]):
+                    animator.toggle_animation(animation_key["id"])
+                    break
+
+        cv.waitKey(1)
 
     cap.release()
     cv.destroyAllWindows()

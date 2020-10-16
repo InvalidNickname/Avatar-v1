@@ -1,0 +1,19 @@
+[
+  {
+    "name": "blush",
+    "key": "b",
+    "id": 0,
+    "for_overlays": "|0|",
+    "on_repeat": "reverse",
+    "on_end": "leave",
+    "replaces": "head",
+    "speed": 1,
+    "frames": [
+      "data/animation/toggleable/blush/1.png",
+      "data/animation/toggleable/blush/2.png",
+      "data/animation/toggleable/blush/3.png",
+      "data/animation/toggleable/blush/4.png",
+      "data/animation/toggleable/blush/5.png"
+    ]
+  }
+]
