@@ -8,13 +8,15 @@ def get_part_name_for_loading(part):
         return ["mouth_0", "mouth_1", "mouth_2", "mouth_3", "mouth_4", "mouth_5", "mouth_6", "mouth_7", "mouth_8",
                 "mouth_9", "mouth_10", "mouth_11", "mouth_12", "mouth_13"]
     elif part == "r_eye_white":
-        return ["r_eye_white_0", "r_eye_white_1", "r_eye_white_2", "r_eye_white_3"]
+        return ["r_eye_white_0", "r_eye_white_1", "r_eye_white_2", "r_eye_white_3", "r_eye_white_4", "r_eye_white_5",
+                "r_eye_white_6"]
     elif part == "l_eye_white":
-        return ["l_eye_white_0", "l_eye_white_1", "l_eye_white_2", "l_eye_white_3"]
+        return ["l_eye_white_0", "l_eye_white_1", "l_eye_white_2", "l_eye_white_3", "l_eye_white_4", "l_eye_white_5",
+                "l_eye_white_6"]
     elif part == "r_eye":
-        return ["r_eye_0", "r_eye_1", "r_eye_2", "r_eye_3"]
+        return ["r_eye_0", "r_eye_1", "r_eye_2", "r_eye_3", "r_eye_4", "r_eye_5", "r_eye_6"]
     elif part == "l_eye":
-        return ["l_eye_0", "l_eye_1", "l_eye_2", "l_eye_3"]
+        return ["l_eye_0", "l_eye_1", "l_eye_2", "l_eye_3", "l_eye_4", "l_eye_5", "l_eye_6"]
     else:
         return [part]
 

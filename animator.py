@@ -13,9 +13,13 @@ class Animator:
     cur_l_brow_tilt = 0
     cur_r_pupil = 0
     cur_l_pupil = 0
-    cur_r_eye_shape = 3
-    cur_l_eye_shape = 3
+    cur_r_eye_shape = 6
+    cur_l_eye_shape = 6
+
     blinking = 0  # 0 - нет, -1 - закрывает глаза, 1 - открывает глаза
+    blinking_mat = [0, 2, 3, 5]  # изображения глаз при моргании
+    blinking_step = 4
+
     head_tilt = 0
     target_head_tilt = 0
     cur_head_offset = 0
@@ -30,27 +34,23 @@ class Animator:
 
     def blink(self):
         if self.blinking == 1:
-            if self.cur_r_eye_shape < 3:
-                self.cur_r_eye_shape += 1
-            else:
-                self.blinking = 0
-            if self.cur_l_eye_shape < 3:
-                self.cur_l_eye_shape += 1
+            if self.blinking_step < 3:
+                self.blinking_step += 1
             else:
                 self.blinking = 0
         else:
             if self.blinking == 0:
                 self.blinking = -1
-            if self.cur_r_eye_shape > 0:
-                self.cur_r_eye_shape -= 1
+                for i in range(len(self.blinking_mat)):
+                    if self.cur_r_eye_shape < self.blinking_mat[len(self.blinking_mat) - i - 1]:
+                        self.blinking_step = len(self.blinking_mat) - i - 1
+            if self.blinking_step > 0:
+                self.blinking_step -= 1
             else:
                 self.blinking = 1
-                self.cur_r_eye_shape += 1
-            if self.cur_l_eye_shape > 0:
-                self.cur_l_eye_shape -= 1
-            else:
-                self.blinking = 1
-                self.cur_l_eye_shape += 1
+                self.blinking_step += 1
+        self.cur_r_eye_shape = self.blinking_mat[self.blinking_step]
+        self.cur_l_eye_shape = self.cur_r_eye_shape
 
     def animate(self, angle, l_brow_pos, r_brow_pos, r_pupil_pos, l_pupil_pos, target_head_offset, l_brow_tilt,
                 r_brow_tilt):
@@ -83,11 +83,11 @@ class Animator:
         if animate:
             self.standby_animate()
         if self.blinking == 0:
-            self.cur_r_eye_shape = 3
-            self.cur_l_eye_shape = 3
+            self.cur_r_eye_shape = 6
+            self.cur_l_eye_shape = 6
         else:
             self.blink()
-        self.put_mask(0, 3, 3)
+        self.put_mask(0, 6, 6)
         self.display()
 
     def put_mask(self, mouth_shape, r_eye_s, l_eye_s):

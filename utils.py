@@ -9,14 +9,16 @@ def length(p1, p2):
     return math.sqrt(math.pow(p1[0] - p2[0], 2) + math.pow(p1[1] - p2[1], 2))
 
 
-def blend_partial(background, overlay, y_shift, height):
-    overlay_img = overlay[:, y_shift:y_shift + height, :3]  # 3 ch
-    overlay_mask = overlay[:, y_shift:y_shift + height, 3]  # 1 ch
+def blend_partial(background, overlay):
+    overlay_img = overlay[:, :, :3]  # 3 ch
+    overlay_mask = overlay[:, :, 3]  # 1 ch
     if np.max(overlay_mask) == 0:
         return background
     else:
         background_img = background[:, :, :3]  # 3 ch
         background_mask = 255 - overlay_mask  # 1 ch
+
+        print(overlay_mask.shape, " ", background[:, :, 3].shape)
 
         mask = cv.add(overlay_mask, background[:, :, 3])  # 1 ch
 
@@ -32,12 +34,13 @@ def blend_partial(background, overlay, y_shift, height):
 
 def blend_transparent(background, overlay):
     height = background.shape[1]
-    n = 8
+    n = 12
     res = np.zeros(background.shape, dtype=np.uint8)
     for i in range(n):
         shift = int(height * i / n)
-        res[:, shift:int(height * (i + 1) / n), :] = \
-            blend_partial(background[:, shift:int(height * (i + 1) / n), :], overlay, shift, int(height / n))
+        background_part = background[:, shift:int(height * (i + 1) / n), :]
+        overlay_part = overlay[:, shift:int(height * (i + 1) / n), :]
+        res[:, shift:int(height * (i + 1) / n), :] = blend_partial(background_part, overlay_part)
     return res
 
 

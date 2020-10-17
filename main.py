@@ -17,22 +17,22 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
     dst = utils.length(upper_point, lower_point) / rel_h
     # угол поворота уголков рта относительно лица
     alpha = math.degrees(math.atan((corners[2][1] - corners[3][1]) / (corners[3][0] - corners[2][0]))) - face_rot
-    if dst < 0.1:
+    if dst < 0.05:
         if alpha > 15:
             mouth_shape = 6
         elif alpha < 0:
             mouth_shape = 10
         else:
             mouth_shape = 0
-    elif dst < 0.2:
+    elif dst < 0.1:
         if alpha > 15:
             mouth_shape = 7
         elif alpha < 0:
             mouth_shape = 11
         else:
             mouth_shape = 1
-    elif dst < 0.3:
-        if mean_mouth < 200:
+    elif dst < 0.15:
+        if mean_mouth < 220:
             if alpha > 15:
                 mouth_shape = 8
             elif alpha < 0:
@@ -43,7 +43,7 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
             # зубы показаны полностью
             mouth_shape = 4
     else:
-        if mean_mouth < 200:
+        if mean_mouth < 220:
             if alpha > 15:
                 mouth_shape = 9
             elif alpha < 0:
@@ -58,13 +58,19 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
 
 def get_eye_shape(upper_point, lower_point, rel_h):
     dst = utils.length(upper_point, lower_point) / rel_h
-    eye_shape = 3
-    if dst < 0.09:
+    eye_shape = 6
+    if dst < 0.08:
         eye_shape = 0
-    elif dst < 0.12:
+    elif dst < 0.09:
         eye_shape = 1
-    elif dst < 0.14:
+    elif dst < 0.10:
         eye_shape = 2
+    elif dst < 0.11:
+        eye_shape = 3
+    elif dst < 0.12:
+        eye_shape = 4
+    elif dst < 0.13:
+        eye_shape = 5
     return eye_shape
 
 
@@ -144,7 +150,7 @@ def main():
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         gray = cv.equalizeHist(gray)
         # обнаружение лица
-        rects = detector(gray, 1)
+        rects = detector.run(gray, 1, -0.5)[0]
         head_center = frame.shape[0] / 2
         if rects:
             # сброс счётчика автономного режима
@@ -177,6 +183,8 @@ def main():
             mouth_shape = get_mouth_shape(shape[62], shape[66], rel_h, mean_mouth[0], mouth_corners, alpha)
             # определяем положение глаз
             # правый глаз - точки 38, 42
+            EAR = (utils.length(shape[37], shape[41]) + utils.length(shape[38], shape[40])) / (
+                utils.length(shape[36], shape[39]))
             right_eye_shape = get_eye_shape(shape[37], shape[41], rel_h)
             right_eye_area = gray[shape[37][1]:shape[41][1], shape[36][0]:shape[39][0]]
             r_pupil_pos, dst = get_pupil_pos(right_eye_area, shape[39], shape[36])
