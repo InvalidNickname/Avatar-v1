@@ -1,4 +1,4 @@
-import numpy as np
+import cupy as cp
 
 import utils
 
@@ -59,7 +59,7 @@ class Overlay:
     def shape(self):
         return self.overlays[0]["background"].shape
 
-    def w_shape(self):
+    def w_s(self):
         new_shape = (self.overlays[0]["background"].shape[1], self.overlays[0]["background"].shape[0])
         return new_shape
 
@@ -67,7 +67,7 @@ class Overlay:
         if path != "":
             return utils.load_image(path)
         else:
-            return np.zeros(self.overlays[0]["background"].shape, dtype=np.uint8)
+            return cp.zeros(self.overlays[0]["background"].shape, dtype=cp.uint8)
 
     def toggle_animation(self, anim_id):
         overlay_str = '|' + str(self.overlay_id) + '|'

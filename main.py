@@ -7,10 +7,12 @@ import numpy as np
 import time
 import random
 import keyboard
+import cupy as cp
 
 import animator as anim
 import utils
 import json
+import limits
 
 
 def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_rot):
@@ -82,7 +84,7 @@ def get_pupil_pos(eye_area, right_point, left_point):
     max_index = (occurrences[len(occurrences) - 1] + occurrences[0]) / 2
     pupil_pos = max_index - (right_point[0] + left_point[0]) / 2 + left_point[0]
     dst = occurrences[len(occurrences) - 1] - occurrences[0]
-    return pupil_pos, dst
+    return pupil_pos * 2 / limits.DOWNSCALING, dst
 
 
 def check_blinking(prev_blink, next_blink, animator):
@@ -121,6 +123,8 @@ def draw_landmarks(frame, shape):
 
 
 def main():
+    cp.cuda.Device(0).use()
+
     with open("data/overlays.json", "r") as read_file:
         overlays = json.load(read_file)
     with open("data/toggleable_animations.json", "r") as read_file:
@@ -183,8 +187,6 @@ def main():
             mouth_shape = get_mouth_shape(shape[62], shape[66], rel_h, mean_mouth[0], mouth_corners, alpha)
             # определяем положение глаз
             # правый глаз - точки 38, 42
-            EAR = (utils.length(shape[37], shape[41]) + utils.length(shape[38], shape[40])) / (
-                utils.length(shape[36], shape[39]))
             right_eye_shape = get_eye_shape(shape[37], shape[41], rel_h)
             right_eye_area = gray[shape[37][1]:shape[41][1], shape[36][0]:shape[39][0]]
             r_pupil_pos, dst = get_pupil_pos(right_eye_area, shape[39], shape[36])
