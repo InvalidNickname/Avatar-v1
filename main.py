@@ -15,26 +15,38 @@ import json
 import limits
 
 
-def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_rot):
+def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_rot, right_side):
     dst = utils.length(upper_point, lower_point) / rel_h
     # угол поворота уголков рта относительно лица
     alpha = math.degrees(math.atan((corners[2][1] - corners[3][1]) / (corners[3][0] - corners[2][0]))) - face_rot
+    # прямая, соединяющая две правых точки рта
+    A = right_side[0][1] - right_side[1][1]
+    B = right_side[1][0] - right_side[0][0]
+    C = right_side[0][0] * right_side[1][1] - right_side[1][0] * right_side[0][1]
+    # расстояние от уголка рта до прямой
+    dist = (abs(A * corners[3][0] + B * corners[3][1] + C) / math.sqrt(math.pow(A, 2) + math.pow(B, 2))) / rel_h
     if dst < 0.07:
-        if alpha > 15:
+        if dist < 0.18:
+            mouth_shape = 14
+        elif alpha > 15:
             mouth_shape = 6
         elif alpha < 0:
             mouth_shape = 10
         else:
             mouth_shape = 0
     elif dst < 0.1:
-        if alpha > 15:
+        if dist < 0.18:
+            mouth_shape = 15
+        elif alpha > 15:
             mouth_shape = 7
         elif alpha < 0:
             mouth_shape = 11
         else:
             mouth_shape = 1
     elif dst < 0.15:
-        if mean_mouth < 220:
+        if dist < 0.18:
+            mouth_shape = 16
+        elif mean_mouth < 220:
             if alpha > 15:
                 mouth_shape = 8
             elif alpha < 0:
@@ -45,7 +57,9 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
             # зубы показаны полностью
             mouth_shape = 4
     else:
-        if mean_mouth < 220:
+        if dist < 0.18:
+            mouth_shape = 17
+        elif mean_mouth < 220:
             if alpha > 15:
                 mouth_shape = 9
             elif alpha < 0:
@@ -203,7 +217,8 @@ def main():
             cv.threshold(mouth_region, 80, 256, cv.THRESH_BINARY, mouth_region)
             mean_mouth = cv.mean(mouth_region)
             mouth_corners = (shape[48], shape[60], shape[64], shape[54])
-            mouth_shape = get_mouth_shape(shape[62], shape[66], rel_h, mean_mouth[0], mouth_corners, alpha)
+            right_side = (shape[53], shape[55])
+            mouth_shape = get_mouth_shape(shape[62], shape[66], rel_h, mean_mouth[0], mouth_corners, alpha, right_side)
             # определяем положение глаз
             # правый глаз - точки 38, 42
             right_eye_shape = get_eye_shape(shape[37], shape[41], rel_h)
@@ -252,7 +267,8 @@ def main():
         if len(fps_history) >= 10:
             fps_history = fps_history[1:9]
         fps_history.append(fps)
-        cv.putText(frame, str(np.mean(fps_history))[0:3] + " fps", (20, 70), cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 32, 32))
+        cv.putText(frame, str(np.mean(fps_history))[0:3] + " fps", (20, 70), cv.FONT_HERSHEY_SIMPLEX, 0.8,
+                   (255, 32, 32))
 
         cv.imshow("Output", frame)
 

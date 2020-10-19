@@ -1,6 +1,5 @@
 import cv2 as cv
 import random
-import time
 
 from overlay import *
 from limits import *
