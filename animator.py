@@ -95,7 +95,6 @@ class Animator:
         self.display()
 
     def put_mask(self, mouth_shape, r_eye_s, l_eye_s):
-        st = time.time()
 
         head_offset = (self.cur_head_offset - self.head_central_y) * HEAD_MAX_Y_OFFSET / 250
 
@@ -154,9 +153,6 @@ class Animator:
         body = cv.warpAffine(body.get(), body_rot.get(), self.imgs.w_s(), flags=linear, borderMode=bmode)
 
         self.res = utils.blend_transparent(self.imgs.get_img("background"), cp.array(body))
-
-        rt = time.time() - st
-        print(rt, " ", "inf" if rt == 0 else 1 / rt)
 
     def display(self):
         cv.imshow("Animezator", self.res.get())

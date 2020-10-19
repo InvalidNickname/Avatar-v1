@@ -19,7 +19,7 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
     dst = utils.length(upper_point, lower_point) / rel_h
     # угол поворота уголков рта относительно лица
     alpha = math.degrees(math.atan((corners[2][1] - corners[3][1]) / (corners[3][0] - corners[2][0]))) - face_rot
-    if dst < 0.05:
+    if dst < 0.07:
         if alpha > 15:
             mouth_shape = 6
         elif alpha < 0:
@@ -122,6 +122,16 @@ def draw_landmarks(frame, shape):
     cv.circle(frame, (shape[20][0], shape[20][1]), 1, (255, 0, 255), -1)
 
 
+def rescale_rect(rect, num):
+    w = rect.right() - rect.left()
+    h = rect.bottom() - rect.top()
+    left = rect.left() * num
+    top = rect.top() * num
+    right = left + w * num
+    bottom = top + h * num
+    return dlib.rectangle(left, top, right, bottom)
+
+
 def main():
     cp.cuda.Device(0).use()
 
@@ -140,11 +150,18 @@ def main():
 
     standby_counter = 0
 
+    frames_skipped = 0
+
+    rects = None  # обнаруженные лица
+
+    fps_history = []
+
     cap = cv.VideoCapture(0)
     if not cap.isOpened():
         print("Cannot open camera")
         exit()
     while True:
+        st = time.time()
         ret, frame = cap.read()
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
@@ -154,19 +171,21 @@ def main():
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         gray = cv.equalizeHist(gray)
         # обнаружение лица
-        rects = detector.run(gray, 1, -0.5)[0]
+        frames_skipped += 1
+        if frames_skipped == 2:
+            small_gray = imutils.resize(frame, width=250)
+            rects = detector.run(small_gray, 1, -0.5)[0]
+            frames_skipped = 0
         head_center = frame.shape[0] / 2
         if rects:
+            face = rescale_rect(rects[0], 2)
             # сброс счётчика автономного режима
             standby_counter = 0
             # определение точек лица
-            shape = predictor(gray, rects[0])
+            shape = predictor(gray, face)
             shape = face_utils.shape_to_np(shape)
-            # если не все лицо в кадре - скип
-            if shape.shape[0] != 68:
-                continue
             # отрисовка лица и точек на оригинале
-            (x, y, w, h) = face_utils.rect_to_bb(rects[0])
+            (x, y, w, h) = face_utils.rect_to_bb(face)
             cv.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 0), 2)
             draw_landmarks(frame, shape)
             # начинаем изврат
@@ -227,6 +246,13 @@ def main():
             prev_blink, next_blink = check_blinking(prev_blink, next_blink, animator)
             # если лицо не найдено через 3 секунды - анимация автономного режима, иначе просто моргаем
             animator.standby(time.time() - standby_counter > 3)
+
+        rt = time.time() - st
+        fps = 1000 if rt == 0 else 1 / rt
+        if len(fps_history) >= 10:
+            fps_history = fps_history[1:9]
+        fps_history.append(fps)
+        cv.putText(frame, str(np.mean(fps_history))[0:3] + " fps", (20, 70), cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 32, 32))
 
         cv.imshow("Output", frame)
 
