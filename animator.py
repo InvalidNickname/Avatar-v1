@@ -9,24 +9,33 @@ linear = cv.INTER_LINEAR
 
 
 class Animator:
+    # текущие углы поворота головы
     cur_tilt = 0
+    cur_vertical_tilt = 0
+    cur_horizontal_tilt = 0
+    # текущее смещение головы от наклона
+    cur_tilt_hor_offset = 0
+    cur_tilt_ver_offset = 0
+    # текущая высота бровей
     cur_l_brow = 0
     cur_r_brow = 0
+    # текущий наклон бровей
     cur_r_brow_tilt = 0
     cur_l_brow_tilt = 0
+    # текущее расположение зрачков
     cur_r_pupil = 0
     cur_l_pupil = 0
+    # текущая форма глаз
     cur_r_eye_shape = 6
     cur_l_eye_shape = 6
 
+    # моргание
     blinking = 0  # 0 - нет, -1 - закрывает глаза, 1 - открывает глаза
     blinking_mat = [0, 2, 3, 5]  # изображения глаз при моргании
     blinking_step = 4
 
     head_tilt = 0
     target_head_tilt = 0
-    cur_head_offset = 0
-    head_central_y = -1
     res = None
 
     cur_breathe = 0
@@ -55,14 +64,22 @@ class Animator:
         self.cur_r_eye_shape = self.blinking_mat[self.blinking_step]
         self.cur_l_eye_shape = self.cur_r_eye_shape
 
-    def animate(self, angle, l_brow_pos, r_brow_pos, r_pupil_pos, l_pupil_pos, target_head_offset, l_brow_tilt,
-                r_brow_tilt):
-        self.head_tilt = angle
-        # сдвигаем лицо по вертикали
-        self.cur_head_offset = move_slowly(target_head_offset, self.cur_head_offset, 4)
+    def animate(self, angle, l_brow_pos, r_brow_pos, r_pupil_pos, l_pupil_pos, l_brow_tilt,
+                r_brow_tilt, head_vertical_tilt, head_horizontal_tilt):
         # поворачиваем лицо
-        self.cur_tilt = move_slowly(self.head_tilt, self.cur_tilt, 3)
+        self.cur_tilt = move_slowly(angle, self.cur_tilt, 3)
         self.cur_tilt = set_limits(self.cur_tilt, LIMIT_HEAD_TILT, -LIMIT_HEAD_TILT)
+        # поворачиваем голову
+        if head_vertical_tilt < 0:
+            head_vertical_tilt = -head_vertical_tilt - 180
+        else:
+            head_vertical_tilt = -head_vertical_tilt + 180
+        self.cur_vertical_tilt = move_slowly(head_vertical_tilt, self.cur_vertical_tilt, 3)
+        self.cur_vertical_tilt = set_limits(self.cur_vertical_tilt, LIMIT_HEAD_TILT, -LIMIT_HEAD_TILT)
+        self.cur_horizontal_tilt = move_slowly(head_horizontal_tilt, self.cur_horizontal_tilt, 3)
+        self.cur_horizontal_tilt = set_limits(self.cur_horizontal_tilt, LIMIT_HEAD_TILT, -LIMIT_HEAD_TILT)
+        self.cur_tilt_hor_offset = self.cur_horizontal_tilt / LIMIT_HEAD_TILT * HEAD_MAX_X_TILT
+        self.cur_tilt_ver_offset = self.cur_vertical_tilt / LIMIT_HEAD_TILT * HEAD_MAX_Y_TILT
         # двигаем брови
         self.cur_l_brow = move_slowly(l_brow_pos, self.cur_l_brow, 2)
         self.cur_l_brow = set_limits(self.cur_l_brow, LIMIT_BROW_HIGH, LIMIT_BROW_LOW)
@@ -80,7 +97,7 @@ class Animator:
         if abs(self.target_head_tilt - self.head_tilt) < 0.05:
             self.target_head_tilt = random.random() * 20 - 10
         self.head_tilt = move_slowly(self.target_head_tilt, self.head_tilt, 7)
-        self.animate(self.head_tilt, 0, 0, 0, 0, self.head_central_y, 0, 0)
+        self.animate(self.head_tilt, 0, 0, 0, 0, 0, 0, 0, 0)
 
     def standby(self, animate):
         if animate:
@@ -94,15 +111,9 @@ class Animator:
         self.display()
 
     def put_mask(self, mouth_shape, r_eye_s, l_eye_s):
-
-        head_offset = (self.cur_head_offset - self.head_central_y) * HEAD_MAX_Y_OFFSET / 250
-
-        head_shift = cp.array([[1, 0, 0], [0, 1, head_offset]], dtype=cp.float32)
         rot_x = self.imgs.shape()[0] / 2
         rot_y = self.imgs.shape()[1] / 2 + HEAD_ROT_POINT_Y
-        rot = utils.get_rot_mat((rot_x, rot_y), self.cur_tilt)
-        rot = cp.vstack([rot, [0, 0, 1]])
-        rot = cp.matmul(head_shift, rot).get()
+        rot = utils.get_rot_mat((rot_x, rot_y), self.cur_tilt).get()
 
         hair_back = self.imgs.get_img("hair_back").get()
         rot_hair_back = cv.warpAffine(hair_back, rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
@@ -118,11 +129,6 @@ class Animator:
         body = cp.array(rot_hair_back)  # gpu
         body = utils.blend_transparent(body, self.imgs.get_img("body"))
 
-        shadow = self.imgs.get_img("head_shadow").get()
-        shadow = cv.warpAffine(shadow, rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
-        shadow = cp.bitwise_and(self.imgs.get_img("body"), cp.array(shadow))
-        body = utils.blend_transparent(body, shadow)  # gpu
-
         face = self.imgs.get_img("head")  # gpu
         brows = cp.bitwise_or(cp.array(r_brow), cp.array(l_brow))  # брови gpu
         brow_mouth = cp.bitwise_or(brows, self.imgs.get_img("mouth_" + str(mouth_shape)))  # брови + рот gpu
@@ -136,17 +142,22 @@ class Animator:
         eyes = make_eyes(self.cur_l_pupil, self.cur_r_pupil, self.imgs, self.cur_l_eye_shape, self.cur_r_eye_shape)
 
         brows_mouth_eyes = cp.bitwise_or(eyes, brow_mouth)
-        brows_mouth_eyes = utils.vertical_shift(brows_mouth_eyes, int(head_offset / 2))
 
         face = utils.blend_transparent(face, brows_mouth_eyes)  # голова + рот + брови + глаза gpu
 
-        face = utils.blend_transparent(face, self.imgs.get_img("hair"))  # голова + рот + брови + глаза + волосы
-        face = cv.warpAffine(face.get(), rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
+        hair_shift = cp.float32([[1, 0, -self.cur_tilt_hor_offset / 5], [0, 1, -self.cur_tilt_ver_offset / 3]])
+        hair = self.imgs.get_img("hair").get()
+        hair = cv.warpAffine(hair, hair_shift, self.imgs.w_s(), borderMode=bmode)
+
+        face = utils.blend_transparent(face, cp.array(hair))  # голова + рот + брови + глаза + волосы
+        face_shift = cp.float32([[1, 0, -self.cur_tilt_hor_offset], [0, 1, -self.cur_tilt_ver_offset]])
+        face = cv.warpAffine(face.get(), face_shift, self.imgs.w_s(), borderMode=bmode)
+        face = cv.warpAffine(face, rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
 
         body = utils.blend_transparent(body, cp.array(face))
 
-        body_shift = cp.array([[1, 0, 0], [0, 1, head_offset + self.cur_breathe]], dtype=cp.float32)
-        body_rot = utils.get_rot_mat((BODY_ROT_X, BODY_ROT_Y), self.head_tilt / 4)
+        body_shift = cp.array([[1, 0, 0], [0, 1, self.cur_breathe]], dtype=cp.float32)
+        body_rot = utils.get_rot_mat((BODY_ROT_X, BODY_ROT_Y), self.cur_tilt / 4)
         body_rot = cp.vstack([body_rot, [0, 0, 1]])
         body_rot = cp.matmul(body_shift, body_rot)
         body = cv.warpAffine(body.get(), body_rot.get(), self.imgs.w_s(), flags=linear, borderMode=bmode)

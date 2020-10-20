@@ -95,9 +95,13 @@ def get_pupil_pos(eye_area, right_point, left_point):
     _, thresh_gray = cv.threshold(eye_area, 0, 255, cv.THRESH_BINARY)
     max_cols = np.amin(thresh_gray, axis=0)
     occurrences = np.where(max_cols == 0)[0]
-    max_index = (occurrences[len(occurrences) - 1] + occurrences[0]) / 2
-    pupil_pos = max_index - (right_point[0] + left_point[0]) / 2 + left_point[0]
-    dst = occurrences[len(occurrences) - 1] - occurrences[0]
+    if len(occurrences) != 0:
+        max_index = (occurrences[len(occurrences) - 1] + occurrences[0]) / 2
+        pupil_pos = max_index - (right_point[0] + left_point[0]) / 2 + left_point[0]
+        dst = occurrences[len(occurrences) - 1] - occurrences[0]
+    else:
+        pupil_pos = 0
+        dst = 0
     return pupil_pos * 2 / limits.DOWNSCALING, dst
 
 
@@ -146,6 +150,26 @@ def rescale_rect(rect, num):
     return dlib.rectangle(left, top, right, bottom)
 
 
+def ref_3d_model():
+    model_points = [[0.0, 0.0, 0.0],
+                    [0.0, -330.0, -65.0],
+                    [-225.0, 170.0, -135.0],
+                    [225.0, 170.0, -135.0],
+                    [-150.0, -150.0, -125.0],
+                    [150.0, -150.0, -125.0]]
+    return np.array(model_points, dtype=np.float64)
+
+
+def ref_2d_image_points(shape):
+    image_points = [shape[30], shape[8], shape[36], shape[45], shape[48], shape[54]]
+    return np.array(image_points, dtype=np.float64)
+
+
+def camera_matrix(fl, center):
+    matrix = [[fl, 1, center[0]], [0, fl, center[1]], [0, 0, 1]]
+    return np.array(matrix, dtype=np.float)
+
+
 def main():
     cp.cuda.Device(0).use()
 
@@ -190,7 +214,6 @@ def main():
             small_gray = imutils.resize(frame, width=250)
             rects = detector.run(small_gray, 1, -0.5)[0]
             frames_skipped = 0
-        head_center = frame.shape[0] / 2
         if rects:
             face = rescale_rect(rects[0], 2)
             # сброс счётчика автономного режима
@@ -203,8 +226,6 @@ def main():
             cv.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 0), 2)
             draw_landmarks(frame, shape)
             # начинаем изврат
-            if animator.head_central_y == -1:
-                animator.head_central_y = frame.shape[0]
             # все размеры определяем относительно длины носа, т.к. она неизменна
             rel_h = shape[33][1] - shape[27][1]
             # текушее увеличение лица
@@ -212,6 +233,17 @@ def main():
             a = shape[45][0] - shape[36][0]
             b = shape[36][1] - shape[45][1]
             alpha = math.degrees(math.atan(b / a))
+            # определяем положение лица в пространстве
+            face_3d_model = ref_3d_model()
+            ref_img_points = ref_2d_image_points(shape)
+            h, w = gray.shape
+            focal_length = w
+            cam_mat = camera_matrix(focal_length, (h / 2, w / 2))
+            dists = np.zeros((4, 1), dtype=np.float64)
+            _, rot_vec, _ = cv.solvePnP(face_3d_model, ref_img_points, cam_mat, dists)
+            r_mat, _ = cv.Rodrigues(rot_vec)
+            # первый угол - наклон по вертикали, 2 - поворот по горизонтали
+            angles, _, _, _, _, _ = cv.RQDecomp3x3(r_mat)
             # определяем положение рта, точки 62 и 66
             mouth_region = gray[shape[62][1]:shape[66][1], shape[61][0]:shape[63][0]].copy()
             cv.threshold(mouth_region, 80, 256, cv.THRESH_BINARY, mouth_region)
@@ -245,8 +277,8 @@ def main():
             # сдвиг головы по вертикали
             head_center = shape[33][1]
             # отрисовка
-            animator.animate(alpha, left_brow_pos_delta, right_brow_pos_delta, r_pupil_pos, l_pupil_pos, shape[33][1],
-                             l_brow_tilt, r_brow_tilt)
+            animator.animate(alpha, left_brow_pos_delta, right_brow_pos_delta, r_pupil_pos, l_pupil_pos,
+                             l_brow_tilt, r_brow_tilt, angles[0], angles[1])
             # проверка моргания
             prev_blink, next_blink = check_blinking(prev_blink, next_blink, animator)
             animator.put_mask(mouth_shape, right_eye_shape, left_eye_shape)
@@ -274,8 +306,6 @@ def main():
 
         if keyboard.is_pressed('alt+q'):
             break
-        elif keyboard.is_pressed('alt+r'):
-            animator.head_central_y = head_center
         else:
             for overlay_key in overlays:
                 if keyboard.is_pressed('alt+' + overlay_key["key"]):

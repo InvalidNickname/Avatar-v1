@@ -58,8 +58,7 @@
       "l_eye_4": "data/animation/left_eye/eye/4.png",
       "l_eye_5": "data/animation/left_eye/eye/5.png",
       "l_eye_6": "data/animation/left_eye/eye/6.png",
-      "hair": "data/animation/hair.png",
-      "head_shadow": "data/animation/head_shadow.png"
+      "hair": "data/animation/hair.png"
     }
   },
   {

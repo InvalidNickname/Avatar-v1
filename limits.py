@@ -15,6 +15,10 @@ LIMIT_BROW_LOW = int(-2 / DOWNSCALING)
 # максимальное смещение головы по вертикали
 HEAD_MAX_Y_OFFSET = int(10 / DOWNSCALING)
 
+# максимальное смещение головы по вертикали/горизонтали при наклоне
+HEAD_MAX_Y_TILT = int(8 / DOWNSCALING)
+HEAD_MAX_X_TILT = int(8 / DOWNSCALING)
+
 ###########################
 # ключевые точки анимации #
 ###########################
