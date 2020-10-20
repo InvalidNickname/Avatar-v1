@@ -192,25 +192,30 @@ def main():
 
     rects = None  # обнаруженные лица
 
-    fps_history = []
+    shape_history = []  # точки лица за последние кадры
+
+    dt_history = []  # время распознавания за последние кадры
+    rt_history = []  # время отрисовки за последние кадры
+    ft_history = []  # время кадра за последние кадры
 
     cap = cv.VideoCapture(0)
     if not cap.isOpened():
-        print("Cannot open camera")
+        print("Can't open camera, exiting")
         exit()
     while True:
         st = time.time()
         ret, frame = cap.read()
         if not ret:
-            print("Can't receive frame (stream end?). Exiting ...")
+            print("Frame not received, exiting")
             break
         frame = cv.flip(frame, 1)
         frame = imutils.resize(frame, width=500)
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         gray = cv.equalizeHist(gray)
         # обнаружение лица
+        ds = time.time()
         frames_skipped += 1
-        if frames_skipped == 2:
+        if frames_skipped == 3:
             small_gray = imutils.resize(frame, width=250)
             rects = detector.run(small_gray, 1, -0.5)[0]
             frames_skipped = 0
@@ -219,8 +224,15 @@ def main():
             # сброс счётчика автономного режима
             standby_counter = 0
             # определение точек лица
-            shape = predictor(gray, face)
-            shape = face_utils.shape_to_np(shape)
+            tmp_shape = predictor(gray, face)
+            if len(dt_history) >= 10:
+                dt_history = dt_history[1:9]
+            dt_history.append(time.time() - ds)
+            tmp_shape = face_utils.shape_to_np(tmp_shape)
+            if len(shape_history) >= 2:
+                shape_history = shape_history[1:9]
+            shape_history.append(tmp_shape)
+            shape = np.mean(shape_history, axis=0).astype(dtype=np.int32)
             # отрисовка лица и точек на оригинале
             (x, y, w, h) = face_utils.rect_to_bb(face)
             cv.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 0), 2)
@@ -274,14 +286,17 @@ def main():
             a = shape[23][0] - shape[25][0]
             b = shape[25][1] - shape[23][1]
             r_brow_tilt = (alpha - math.degrees(math.atan(b / a))) / 2
-            # сдвиг головы по вертикали
-            head_center = shape[33][1]
-            # отрисовка
+            # анимирование подвижных частей
             animator.animate(alpha, left_brow_pos_delta, right_brow_pos_delta, r_pupil_pos, l_pupil_pos,
                              l_brow_tilt, r_brow_tilt, angles[0], angles[1])
             # проверка моргания
             prev_blink, next_blink = check_blinking(prev_blink, next_blink, animator)
+            # отрисовка
+            rs = time.time()
             animator.put_mask(mouth_shape, right_eye_shape, left_eye_shape)
+            if len(rt_history) >= 10:
+                rt_history = rt_history[1:9]
+            rt_history.append(time.time() - rs)
             # отображение
             animator.display()
             # обновление анимаций
@@ -289,18 +304,21 @@ def main():
         else:
             if standby_counter == 0:
                 standby_counter = time.time()
-            cv.putText(frame, "Face not found", (20, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 32, 32))
+            cv.putText(frame, "Face not found", (20, 60), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
             prev_blink, next_blink = check_blinking(prev_blink, next_blink, animator)
             # если лицо не найдено через 3 секунды - анимация автономного режима, иначе просто моргаем
             animator.standby(time.time() - standby_counter > 3)
 
-        rt = time.time() - st
-        fps = 1000 if rt == 0 else 1 / rt
-        if len(fps_history) >= 10:
-            fps_history = fps_history[1:9]
-        fps_history.append(fps)
-        cv.putText(frame, str(np.mean(fps_history))[0:3] + " fps", (20, 70), cv.FONT_HERSHEY_SIMPLEX, 0.8,
-                   (255, 32, 32))
+        ft = time.time() - st
+        if len(ft_history) >= 10:
+            ft_history = ft_history[1:9]
+        ft_history.append(ft)
+        fps = str(1 / np.mean(ft_history))[0:3]
+        cv.putText(frame, fps + " fps", (20, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
+        dt = str(np.mean(dt_history))[0:5]
+        rt = str(np.mean(rt_history))[0:5]
+        ft = str(np.mean(ft_history))[0:5]
+        cv.putText(frame, dt + "/" + rt + "/" + ft, (20, 40), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
 
         cv.imshow("Output", frame)
 

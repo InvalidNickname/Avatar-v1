@@ -142,8 +142,10 @@ class Animator:
         eyes = make_eyes(self.cur_l_pupil, self.cur_r_pupil, self.imgs, self.cur_l_eye_shape, self.cur_r_eye_shape)
 
         brows_mouth_eyes = cp.bitwise_or(eyes, brow_mouth)
+        face_shift = cp.array([[1, 0, -self.cur_tilt_hor_offset / 2.5], [0, 1, -self.cur_tilt_ver_offset / 1.5]], dtype=cp.float32)
+        brows_mouth_eyes = cv.warpAffine(brows_mouth_eyes.get(), face_shift.get(), self.imgs.w_s(), borderMode=bmode)
 
-        face = utils.blend_transparent(face, brows_mouth_eyes)  # голова + рот + брови + глаза gpu
+        face = utils.blend_transparent(face, cp.array(brows_mouth_eyes))  # голова + рот + брови + глаза gpu
 
         hair_shift = cp.float32([[1, 0, -self.cur_tilt_hor_offset / 5], [0, 1, -self.cur_tilt_ver_offset / 3]])
         hair = self.imgs.get_img("hair").get()
