@@ -26,6 +26,9 @@ HEAD_MAX_X_TILT = int(8 / DOWNSCALING)
 # y точки вращения головы относительно центра картинки
 HEAD_ROT_POINT_Y = int(140 / DOWNSCALING)
 
+# y точки вращения неподвижной части волос
+UM_HAIR_ROT_POINT_Y = int(300 / DOWNSCALING)
+
 # точка вращения правой брови относительно левого верхнего края картинки
 R_BROW_ROT_X = int(194 / DOWNSCALING)
 R_BROW_ROT_Y = int(262 / DOWNSCALING)

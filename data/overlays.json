@@ -6,7 +6,7 @@
     "replaces": {
       "background": "data/animation/background.png",
       "body": "data/animation/body.png",
-      "hair_back": "data/animation/hair_back.png",
+      "hair_back": "data/animation/hair/back.png",
       "head": "data/animation/head.png",
       "l_brow": "data/animation/brows/left_brow.png",
       "r_brow": "data/animation/brows/right_brow.png",
@@ -58,7 +58,8 @@
       "l_eye_4": "data/animation/left_eye/eye/4.png",
       "l_eye_5": "data/animation/left_eye/eye/5.png",
       "l_eye_6": "data/animation/left_eye/eye/6.png",
-      "hair": "data/animation/hair.png"
+      "hair": "data/animation/hair/basic.png",
+      "hair_unmoving": "data/animation/hair/unmoving.png"
     }
   },
   {
@@ -76,7 +77,8 @@
       "r_eye_pupil": "",
       "l_eye_white": "",
       "l_eye_pupil": "",
-      "l_eye": ""
+      "l_eye": "",
+      "hair_unmoving": ""
     }
   }
 ]

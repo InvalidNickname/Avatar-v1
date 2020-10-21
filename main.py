@@ -304,7 +304,7 @@ def main():
         else:
             if standby_counter == 0:
                 standby_counter = time.time()
-            cv.putText(frame, "Face not found", (20, 60), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
+            cv.putText(frame, "face not found", (20, 260), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
             prev_blink, next_blink = check_blinking(prev_blink, next_blink, animator)
             # если лицо не найдено через 3 секунды - анимация автономного режима, иначе просто моргаем
             animator.standby(time.time() - standby_counter > 3)
@@ -315,10 +315,13 @@ def main():
         ft_history.append(ft)
         fps = str(1 / np.mean(ft_history))[0:3]
         cv.putText(frame, fps + " fps", (20, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
-        dt = str(np.mean(dt_history))[0:5]
-        rt = str(np.mean(rt_history))[0:5]
-        ft = str(np.mean(ft_history))[0:5]
-        cv.putText(frame, dt + "/" + rt + "/" + ft, (20, 40), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
+        dt = str(np.mean(dt_history))[0:5] + "/" + str(np.mean(rt_history))[0:5] + "/" + str(np.mean(ft_history))[0:5]
+        cv.putText(frame, dt, (20, 40), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
+
+        over_st = "cur overlay: " + str(animator.get_overlay())
+        cv.putText(frame, over_st, (20, 60), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
+        anim_st = "cur animation: " + str(animator.get_cur_animation())
+        cv.putText(frame, anim_st, (20, 80), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
 
         cv.imshow("Output", frame)
 
