@@ -320,7 +320,7 @@ def main():
 
         over_st = "cur overlay: " + str(animator.get_overlay())
         cv.putText(frame, over_st, (20, 60), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
-        anim_st = "cur animation: " + str(animator.get_cur_animation())
+        anim_st = "cur animation: " + animator.get_cur_animations()
         cv.putText(frame, anim_st, (20, 80), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
 
         cv.imshow("Output", frame)

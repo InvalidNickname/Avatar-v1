@@ -24,11 +24,11 @@ def get_part_name_for_loading(part):
 
 class Overlay:
     overlay_id = 0
-    animation_started = False
-    animation_id = -1
-    animation_step = -1
-    animation_status = 0
-    speed_counter = -1
+    animations_start = dict()
+    animations_step = dict()
+    animations_status = dict()
+    anim_speed_counter = dict()
+    animations_showing = dict()
 
     def __init__(self, json_overlays, json_animations):
         self.overlays = []
@@ -50,8 +50,9 @@ class Overlay:
                 self.animations[i]["frames"].append(self.load_image(frames[j]))
 
     def get_img(self, part):
-        if self.animation_id != -1 and part == self.animations[self.animation_id]["replaces"]:
-            return self.animations[self.animation_id]["frames"][self.animation_step]
+        for anim_id, showing in self.animations_showing.items():
+            if showing and part == self.animations[anim_id]["replaces"]:
+                return self.animations[anim_id]["frames"][self.animations_step[anim_id]]
         if part in self.overlays[self.overlay_id]:
             return self.overlays[self.overlay_id][part]
         else:
@@ -72,41 +73,54 @@ class Overlay:
 
     def toggle_animation(self, anim_id):
         overlay_str = '|' + str(self.overlay_id) + '|'
-        if overlay_str in self.animations[self.animation_id]["for_overlays"]:
-            if anim_id != self.animation_id:
-                self.animation_status = 1
-            self.animation_id = anim_id
-            if self.animation_status == -1:
-                self.animation_step = len(self.animations[self.animation_id]["frames"]) - 1
+        if overlay_str in self.animations[anim_id]["for_overlays"]:
+            if anim_id not in self.animations_status:
+                self.animations_status[anim_id] = 1
+            if self.animations_status[anim_id] == -1:
+                self.animations_step[anim_id] = len(self.animations[anim_id]["frames"]) - 1
             else:
-                self.animation_step = 0
-            self.animation_started = True
-            self.speed_counter = -1
+                self.animations_step[anim_id] = 0
+            self.anim_speed_counter[anim_id] = -1
+            self.animations_start[anim_id] = True
+            self.animations_showing[anim_id] = True
 
     def change_overlay(self, over_id):
         self.overlay_id = over_id
-        self.animation_id = -1
-        self.animation_started = False
+        self.animations_start = dict()
+        self.animations_step = dict()
+        self.animations_status = dict()
+        self.anim_speed_counter = dict()
+        self.animations_showing = dict()
 
     def update_animation(self):
-        if self.animation_started:
-            self.speed_counter += 1
-            if self.speed_counter == self.animations[self.animation_id]["speed"]:
-                self.speed_counter = 0
-                if self.animation_status == 1:
-                    if self.animation_step < len(self.animations[self.animation_id]["frames"]) - 1:
-                        self.animation_step += 1
-                    else:
-                        self.animation_started = False
-                        if self.animations[self.animation_id]["on_end"] != "leave":
-                            self.animation_id = -1  # прекратить показ анимации
-                        if self.animations[self.animation_id]["on_repeat"] == "reverse":
-                            self.animation_status = -1  # проигрывать в обратном порядке при следующем запуске
-                elif self.animation_status == -1:
-                    if self.animation_step > 0:
-                        self.animation_step -= 1
-                    else:
-                        self.animation_started = False
-                        self.animation_id = -1  # прекратить показ анимации
-                        if self.animations[self.animation_id]["on_repeat"] == "reverse":
-                            self.animation_status = 1  # проигрывать в нормальном порядке при следующем запуске
+        for anim_id, running in self.animations_start.items():
+            if running:
+                self.anim_speed_counter[anim_id] += 1
+                if self.anim_speed_counter[anim_id] == self.animations[anim_id]["speed"]:
+                    self.anim_speed_counter[anim_id] = 0
+                    if self.animations_status[anim_id] == 1:
+                        if self.animations_step[anim_id] < len(self.animations[anim_id]["frames"]) - 1:
+                            self.animations_step[anim_id] += 1
+                        else:
+                            self.animations_start[anim_id] = False
+                            if self.animations[anim_id]["on_end"] != "leave":
+                                self.animations_showing[anim_id] = False  # прекратить показ анимации
+                            if self.animations[anim_id]["on_repeat"] == "reverse":
+                                self.animations_status[anim_id] = -1  # проигрывать в обратном порядке при запуске
+                    elif self.animations_status[anim_id] == -1:
+                        if self.animations_step[anim_id] > 0:
+                            self.animations_step[anim_id] -= 1
+                        else:
+                            self.animations_start[anim_id] = False
+                            self.animations_showing[anim_id] = False  # прекратить показ анимации
+                            if self.animations[anim_id]["on_repeat"] == "reverse":
+                                self.animations_status[anim_id] = 1  # проигрывать в нормальном порядке при запуске
+
+    def get_cur_animations(self):
+        st = ""
+        for anim_id, running in self.animations_start.items():
+            if running:
+                st += str(anim_id) + " "
+        if st == "":
+            st = "-1"
+        return st

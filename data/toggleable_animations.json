@@ -15,5 +15,20 @@
       "data/animation/toggleable/blush/4.png",
       "data/animation/toggleable/blush/5.png"
     ]
+  },
+  {
+    "name": "mofu_mofu",
+    "key": "m",
+    "id": 1,
+    "for_overlays": "|0|",
+    "on_repeat": "repeat",
+    "on_end": "delete",
+    "replaces": "hair_back",
+    "speed": 1,
+    "frames": [
+      "data/animation/hair/back.png",
+      "data/animation/toggleable/mofu_mofu/2.png",
+      "data/animation/hair/back.png"
+    ]
   }
 ]

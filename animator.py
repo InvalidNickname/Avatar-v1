@@ -189,8 +189,8 @@ class Animator:
     def get_overlay(self):
         return self.imgs.overlay_id
 
-    def get_cur_animation(self):
-        return self.imgs.animation_id
+    def get_cur_animations(self):
+        return self.imgs.get_cur_animations()
 
 
 def make_eyes(l_pupil_pos, r_pupil_pos, imgs, l_eye_shape, r_eye_shape):
