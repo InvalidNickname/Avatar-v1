@@ -172,7 +172,10 @@ class Animator:
         body_rot = cp.matmul(body_shift, body_rot)
         body = cv.warpAffine(body.get(), body_rot.get(), self.imgs.w_s(), flags=linear, borderMode=bmode)
 
-        self.res = utils.blend_transparent(self.imgs.get_img("background"), cp.array(body))
+        self.res = cp.zeros(self.imgs.shape(), dtype=cp.uint8).get()
+        self.res[:] = B_COLOR
+        self.res = utils.blend_transparent(cp.array(self.res), self.imgs.get_img("background"))
+        self.res = utils.blend_transparent(self.res, cp.array(body))
 
     def display(self):
         cv.imshow("Animezator", self.res.get())

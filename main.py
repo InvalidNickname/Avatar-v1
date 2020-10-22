@@ -12,7 +12,7 @@ import cupy as cp
 import animator as anim
 import utils
 import json
-import limits
+from limits import *
 
 
 def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_rot, right_side):
@@ -102,7 +102,7 @@ def get_pupil_pos(eye_area, right_point, left_point):
     else:
         pupil_pos = 0
         dst = 0
-    return pupil_pos * 2 / limits.DOWNSCALING, dst
+    return pupil_pos * 2 / DOWNSCALING, dst
 
 
 def check_blinking(prev_blink, next_blink, animator):
@@ -298,7 +298,8 @@ def main():
                 rt_history = rt_history[1:9]
             rt_history.append(time.time() - rs)
             # отображение
-            animator.display()
+            if SHOW_OUTPUT:
+                animator.display()
             # обновление анимаций
             animator.update_animations()
         else:
@@ -323,7 +324,8 @@ def main():
         anim_st = "cur animation: " + animator.get_cur_animations()
         cv.putText(frame, anim_st, (20, 80), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 32, 32))
 
-        cv.imshow("Output", frame)
+        if SHOW_INPUT:
+            cv.imshow("Output", frame)
 
         if keyboard.is_pressed('alt+q'):
             break
