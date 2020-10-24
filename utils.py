@@ -29,32 +29,6 @@ def blend_transparent(background, overlay):
     return cp.array(res, dtype=cp.uint8)
 
 
-def vertical_shift(arr, num, fill_value=0):
-    result = cp.empty_like(arr)
-    if num > 0:
-        result[:num, :, :] = fill_value
-        result[num:, :, :] = arr[:-num, :, :]
-    elif num < 0:
-        result[num:, :, :] = fill_value
-        result[:num, :, :] = arr[-num:, :, :]
-    else:
-        result = arr
-    return result
-
-
-def horizontal_shift(arr, num, fill_value=0):
-    result = cp.empty_like(arr)
-    if num > 0:
-        result[:, :num, :] = fill_value
-        result[:, num:, :] = arr[:, :-num, :]
-    elif num < 0:
-        result[:, num:, :] = fill_value
-        result[:, :num, :] = arr[:, -num:, :]
-    else:
-        result = arr
-    return result
-
-
 def get_rot_mat(center, angle):
     angle = math.radians(angle)
     alpha = math.cos(angle)
@@ -64,6 +38,27 @@ def get_rot_mat(center, angle):
     return res
 
 
+def get_shift_mat(horizontal=0, vertical=0):
+    return cp.array([[1, 0, horizontal], [0, 1, vertical]], dtype=cp.float32)
+
+
+def warp_affine(src, mat):
+    h, w = src.shape[:2]
+    dst_y, dst_x = cp.indices((h, w))
+    dst_lin_hmg_pts = cp.stack((dst_x.ravel(), dst_y.ravel(), cp.ones(dst_y.size)))
+    new_pos = cp.dot(mat, dst_lin_hmg_pts)
+    new_pos = cp.where(new_pos < 0, 0, new_pos)
+    new_pos[0] = cp.where(new_pos[0] >= w, 0, new_pos[0])
+    new_pos[1] = cp.where(new_pos[1] >= h, 0, new_pos[1])
+    new_pos = cp.where(cp.abs(new_pos % 1) >= 0.5, cp.ceil(new_pos), cp.floor(new_pos)).astype(int)
+    dst = cp.zeros(src.shape, dtype=cp.uint8)
+    dst[new_pos[1], new_pos[0]] = src.reshape(-1, 4)
+    return dst
+
+
 def load_image(path):
-    img = cv.resize(cv.imread(path, cv.IMREAD_UNCHANGED), (0, 0), fy=1 / DOWNSCALING, fx=1 / DOWNSCALING)
+    if DOWNSCALING != 1:
+        img = cv.resize(cv.imread(path, cv.IMREAD_UNCHANGED), (0, 0), fy=1 / DOWNSCALING, fx=1 / DOWNSCALING)
+    else:
+        img = cv.imread(path, cv.IMREAD_UNCHANGED)
     return cp.asarray(img)

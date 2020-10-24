@@ -4,9 +4,6 @@ import random
 from overlay import *
 from limits import *
 
-bmode = cv.BORDER_REPLICATE
-linear = cv.INTER_LINEAR
-
 
 class Animator:
     # текущие углы поворота головы
@@ -113,25 +110,24 @@ class Animator:
     def put_mask(self, mouth_shape, r_eye_s, l_eye_s):
         rot_x = self.imgs.shape()[0] / 2
         rot_y = self.imgs.shape()[1] / 2 + HEAD_ROT_POINT_Y
-        rot = utils.get_rot_mat((rot_x, rot_y), self.cur_tilt).get()
+        rot = utils.get_rot_mat((rot_x, rot_y), self.cur_tilt)
 
-        hair_back = self.imgs.get_img("hair_back").get()
-        rot_hair_back = cv.warpAffine(hair_back, rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
+        hair_back = self.imgs.get_img("hair_back")
+        rot_hair_back = utils.warp_affine(hair_back, rot)
 
         l_brow_mat = make_brow_warp_matrix(self.cur_l_brow, L_BROW_ROT_X, L_BROW_ROT_Y, self.cur_l_brow_tilt)
-        l_brow = self.imgs.get_img("l_brow").get()
-        l_brow = cv.warpAffine(l_brow, l_brow_mat, self.imgs.w_s(), borderMode=bmode)
+        l_brow = self.imgs.get_img("l_brow")
+        l_brow = utils.warp_affine(l_brow, l_brow_mat)
 
         r_brow_mat = make_brow_warp_matrix(self.cur_r_brow, R_BROW_ROT_X, R_BROW_ROT_Y, self.cur_r_brow_tilt)
-        r_brow = self.imgs.get_img("r_brow").get()
-        r_brow = cv.warpAffine(r_brow, r_brow_mat, self.imgs.w_s(), borderMode=bmode)
+        r_brow = self.imgs.get_img("r_brow")
+        r_brow = utils.warp_affine(r_brow, r_brow_mat)
 
-        body = cp.array(rot_hair_back)  # gpu
-        body = utils.blend_transparent(body, self.imgs.get_img("body"))
+        body = utils.blend_transparent(rot_hair_back, self.imgs.get_img("body"))
 
-        face = self.imgs.get_img("head")  # gpu
-        brows = cp.bitwise_or(cp.array(r_brow), cp.array(l_brow))  # брови gpu
-        brow_mouth = cp.bitwise_or(brows, self.imgs.get_img("mouth_" + str(mouth_shape)))  # брови + рот gpu
+        face = self.imgs.get_img("head")
+        brows = cp.bitwise_or(r_brow, l_brow)  # брови
+        brow_mouth = cp.bitwise_or(brows, self.imgs.get_img("mouth_" + str(mouth_shape)))  # брови + рот
 
         if self.blinking == 0:
             self.cur_r_eye_shape = r_eye_s
@@ -142,40 +138,39 @@ class Animator:
         eyes = make_eyes(self.cur_l_pupil, self.cur_r_pupil, self.imgs, self.cur_l_eye_shape, self.cur_r_eye_shape)
 
         brows_mouth_eyes = cp.bitwise_or(eyes, brow_mouth)
-        face_shift = cp.array([[1, 0, -self.cur_tilt_hor_offset / 2.5], [0, 1, -self.cur_tilt_ver_offset / 1.5]],
-                              dtype=cp.float32)
-        brows_mouth_eyes = cv.warpAffine(brows_mouth_eyes.get(), face_shift.get(), self.imgs.w_s(), borderMode=bmode)
+        face_shift = utils.get_shift_mat(-self.cur_tilt_hor_offset / 2.5, -self.cur_tilt_ver_offset / 1.5)
+        brows_mouth_eyes = utils.warp_affine(brows_mouth_eyes, face_shift)
 
-        face = utils.blend_transparent(face, cp.array(brows_mouth_eyes))  # голова + рот + брови + глаза gpu
+        face = utils.blend_transparent(face, cp.array(brows_mouth_eyes))  # голова + рот + брови + глаза
 
-        hair_shift = cp.float32([[1, 0, -self.cur_tilt_hor_offset / 5], [0, 1, -self.cur_tilt_ver_offset / 3]])
-        hair = self.imgs.get_img("hair").get()
-        hair = cv.warpAffine(hair, hair_shift, self.imgs.w_s(), borderMode=bmode)
+        hair_shift = utils.get_shift_mat(-self.cur_tilt_hor_offset / 5, -self.cur_tilt_ver_offset / 3)
+        hair = self.imgs.get_img("hair")
+        hair = utils.warp_affine(hair, hair_shift)
 
-        hair_um = self.imgs.get_img("hair_unmoving").get()
-        un_rot = utils.get_rot_mat((rot_x, UM_HAIR_ROT_POINT_Y), -self.cur_tilt/2).get()
+        hair_um = self.imgs.get_img("hair_unmoving")
+        un_rot = utils.get_rot_mat((rot_x, UM_HAIR_ROT_POINT_Y), -self.cur_tilt / 2)
         un_rot = cp.vstack([un_rot, [0, 0, 1]])
-        un_rot = cp.matmul(cp.array(hair_shift), un_rot).get()
-        hair_um = cv.warpAffine(hair_um, un_rot, self.imgs.w_s(), borderMode=bmode)
+        un_rot = cp.matmul(cp.array(hair_shift), un_rot)
+        hair_um = utils.warp_affine(hair_um, un_rot)
 
         face = utils.blend_transparent(face, cp.array(hair_um))
         face = utils.blend_transparent(face, cp.array(hair))  # голова + рот + брови + глаза + волосы
-        face_shift = cp.float32([[1, 0, -self.cur_tilt_hor_offset], [0, 1, -self.cur_tilt_ver_offset]])
-        face = cv.warpAffine(face.get(), face_shift, self.imgs.w_s(), borderMode=bmode)
-        face = cv.warpAffine(face, rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
+        face_shift = utils.get_shift_mat(-self.cur_tilt_hor_offset, -self.cur_tilt_ver_offset)
+        face = utils.warp_affine(face, face_shift)
+        face = utils.warp_affine(face, rot)
 
-        body = utils.blend_transparent(body, cp.array(face))
+        body = utils.blend_transparent(body, face)
 
-        body_shift = cp.array([[1, 0, 0], [0, 1, self.cur_breathe]], dtype=cp.float32)
+        body_shift = utils.get_shift_mat(vertical=self.cur_breathe)
         body_rot = utils.get_rot_mat((BODY_ROT_X, BODY_ROT_Y), self.cur_tilt / 4)
         body_rot = cp.vstack([body_rot, [0, 0, 1]])
         body_rot = cp.matmul(body_shift, body_rot)
-        body = cv.warpAffine(body.get(), body_rot.get(), self.imgs.w_s(), flags=linear, borderMode=bmode)
+        body = utils.warp_affine(body, body_rot)
 
         self.res = cp.zeros(self.imgs.shape(), dtype=cp.uint8).get()
         self.res[:] = B_COLOR
         self.res = utils.blend_transparent(cp.array(self.res), self.imgs.get_img("background"))
-        self.res = utils.blend_transparent(self.res, cp.array(body))
+        self.res = utils.blend_transparent(self.res, body)
 
     def display(self):
         cv.imshow("Animezator", self.res.get())
@@ -198,9 +193,11 @@ class Animator:
 
 def make_eyes(l_pupil_pos, r_pupil_pos, imgs, l_eye_shape, r_eye_shape):
     l_eye_pupil = imgs.get_img("l_eye_pupil").copy()
-    l_eye_pupil = utils.horizontal_shift(l_eye_pupil, int(l_pupil_pos))
+    l_shift = utils.get_shift_mat(horizontal=l_pupil_pos)
+    l_eye_pupil = utils.warp_affine(l_eye_pupil, l_shift)
     r_eye_pupil = imgs.get_img("r_eye_pupil").copy()
-    r_eye_pupil = utils.horizontal_shift(r_eye_pupil, int(r_pupil_pos))
+    r_shift = utils.get_shift_mat(horizontal=r_pupil_pos)
+    r_eye_pupil = utils.warp_affine(r_eye_pupil, r_shift)
     l_eye_white = imgs.get_img("l_eye_white_" + str(l_eye_shape))
     r_eye_white = imgs.get_img("r_eye_white_" + str(r_eye_shape))
     eye_white = cp.bitwise_or(l_eye_white, r_eye_white)
@@ -235,7 +232,7 @@ def make_brow_warp_matrix(y_offset, rot_x, rot_y, angle):
     brow_rot = utils.get_rot_mat((rot_x, rot_y), angle)
     brow_rot = cp.vstack([brow_rot, [0, 0, 1]])
     brow_rot = cp.matmul(brow_shift, brow_rot)
-    return brow_rot.get()
+    return brow_rot
 
 
 def breathe(cur, status):
