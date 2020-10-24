@@ -339,7 +339,8 @@ def main():
                     animator.toggle_animation(animation_key["id"])
                     break
 
-        cv.waitKey(1)
+        wait_time = int(1000 / TARGET_FPS - 1000 * ft) if ft < 1 / TARGET_FPS else 1
+        cv.waitKey(wait_time)
 
     cap.release()
     cv.destroyAllWindows()
