@@ -1,5 +1,6 @@
 import cv2 as cv
 import random
+import numpy as np
 
 from overlay import *
 from limits import *
@@ -111,9 +112,7 @@ class Animator:
         self.display()
 
     def put_mask(self, mouth_shape, r_eye_s, l_eye_s):
-        rot_x = self.imgs.shape()[0] / 2
-        rot_y = self.imgs.shape()[1] / 2 + HEAD_ROT_POINT_Y
-        rot = utils.get_rot_mat((rot_x, rot_y), self.cur_tilt).get()
+        rot = utils.get_rot_mat((HEAD_ROT_POINT_X, HEAD_ROT_POINT_Y), self.cur_tilt, True)
 
         hair_back = self.imgs.get_img("hair_back").get()
         body = cv.warpAffine(hair_back, rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
@@ -121,11 +120,11 @@ class Animator:
 
         l_brow_mat = make_brow_warp_matrix(self.cur_l_brow, L_BROW_ROT_X, L_BROW_ROT_Y, self.cur_l_brow_tilt)
         l_brow = self.imgs.get_img("l_brow").get()
-        l_brow = cv.warpAffine(l_brow, l_brow_mat, self.imgs.w_s(), borderMode=bmode)
+        l_brow = cv.warpAffine(l_brow, l_brow_mat, self.imgs.w_s(), flags=linear, borderMode=bmode)
 
         r_brow_mat = make_brow_warp_matrix(self.cur_r_brow, R_BROW_ROT_X, R_BROW_ROT_Y, self.cur_r_brow_tilt)
         r_brow = self.imgs.get_img("r_brow").get()
-        r_brow = cv.warpAffine(r_brow, r_brow_mat, self.imgs.w_s(), borderMode=bmode)
+        r_brow = cv.warpAffine(r_brow, r_brow_mat, self.imgs.w_s(), flags=linear, borderMode=bmode)
 
         s_face = cp.bitwise_or(cp.array(r_brow), cp.array(l_brow))
         s_face = cp.bitwise_or(s_face, self.imgs.get_img("mouth_" + str(mouth_shape)))
@@ -139,36 +138,39 @@ class Animator:
         eyes = make_eyes(self.c_l_pupil, self.c_r_pupil, self.imgs, self.c_l_eye_s, self.c_r_eye_s)
 
         s_face = cp.bitwise_or(eyes, s_face)
-        face_shift = cp.array([[1, 0, -self.cur_tilt_hor_offset / 2.5], [0, 1, -self.cur_tilt_ver_offset / 1.5]],
-                              dtype=cp.float32)
-        s_face = cv.warpAffine(s_face.get(), face_shift.get(), self.imgs.w_s(), borderMode=bmode)
+        s_face = utils.horizontal_shift(s_face, -self.cur_tilt_hor_offset / 2.5)
+        s_face = utils.vertical_shift(s_face, -self.cur_tilt_ver_offset / 1.5)
 
-        hair_shift = cp.float32([[1, 0, -self.cur_tilt_hor_offset / 5], [0, 1, -self.cur_tilt_ver_offset / 3]])
-        hair = cv.warpAffine(self.imgs.get_img("hair").get(), hair_shift, self.imgs.w_s(), borderMode=bmode)
+        hair = utils.horizontal_shift(self.imgs.get_img("hair"), -self.cur_tilt_hor_offset / 5)
+        hair = utils.vertical_shift(hair, -self.cur_tilt_ver_offset / 3)
 
-        un_rot = utils.get_rot_mat((rot_x, UM_HAIR_ROT_POINT_Y), -self.cur_tilt / 2).get()
-        un_rot = cp.vstack([un_rot, [0, 0, 1]])
-        un_rot = cp.matmul(cp.array(hair_shift), un_rot).get()
+        hair_shift = utils.get_shift_mat(-self.cur_tilt_hor_offset / 5, -self.cur_tilt_ver_offset / 3)
+        un_rot = utils.get_rot_mat((HEAD_ROT_POINT_X, UM_HAIR_ROT_POINT_Y), -self.cur_tilt / 2, True)
+        un_rot = np.vstack([un_rot, [0, 0, 1]])
+        un_rot = np.matmul(hair_shift, un_rot)
         hair_um = cv.warpAffine(self.imgs.get_img("hair_unmoving").get(), un_rot, self.imgs.w_s(), borderMode=bmode)
 
-        face = utils.blend_transparent(self.imgs.get_img("head"), cp.array(s_face))
+        face = utils.blend_transparent(self.imgs.get_img("head"), s_face)
         face = utils.blend_transparent(face, cp.array(hair_um))
         face = utils.blend_transparent(face, cp.array(hair))
-        face_shift = cp.float32([[1, 0, -self.cur_tilt_hor_offset], [0, 1, -self.cur_tilt_ver_offset]])
-        face = cv.warpAffine(face.get(), face_shift, self.imgs.w_s(), borderMode=bmode)
-        face = cv.warpAffine(face, rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
+        face = utils.horizontal_shift(face, -self.cur_tilt_hor_offset)
+        face = utils.vertical_shift(face, -self.cur_tilt_ver_offset)
+        face = cv.warpAffine(face.get(), rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
 
         body = utils.blend_transparent(body, cp.array(face))
 
-        body_shift = cp.array([[1, 0, 0], [0, 1, self.cur_breathe]], dtype=cp.float32)
-        body_rot = utils.get_rot_mat((BODY_ROT_X, BODY_ROT_Y), self.cur_tilt / 4)
-        body_rot = cp.vstack([body_rot, [0, 0, 1]])
-        body_rot = cp.matmul(body_shift, body_rot)
-        body = cv.warpAffine(body.get(), body_rot.get(), self.imgs.w_s(), flags=linear, borderMode=bmode)
+        body_shift = utils.get_shift_mat(0, self.cur_breathe)
+        body_rot = utils.get_rot_mat((BODY_ROT_X, BODY_ROT_Y), self.cur_tilt / 4, True)
+        body_rot = np.vstack([body_rot, [0, 0, 1]])
+        body_rot = np.matmul(body_shift, body_rot)
+        body = cv.warpAffine(body.get(), body_rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
 
-        self.res = cp.zeros(self.imgs.shape(), dtype=cp.uint8).get()
-        self.res[:] = B_COLOR
-        self.res = utils.blend_transparent(cp.array(self.res), self.imgs.get_img("background"))
+        self.res = cp.zeros(self.imgs.shape(), dtype=cp.uint8)
+        self.res[:, :, 0] = B_COLOR[0]
+        self.res[:, :, 1] = B_COLOR[1]
+        self.res[:, :, 2] = B_COLOR[2]
+        self.res[:, :, 3] = B_COLOR[3]
+        self.res = utils.blend_transparent(self.res, self.imgs.get_img("background"))
         self.res = utils.blend_transparent(self.res, cp.array(body))
 
     def display(self):
@@ -225,11 +227,11 @@ def set_limits(current, upper_limit, lower_limit):
 
 
 def make_brow_warp_matrix(y_offset, rot_x, rot_y, angle):
-    brow_shift = cp.array([[1, 0, 0], [0, 1, -y_offset]], dtype=cp.float32)
-    brow_rot = utils.get_rot_mat((rot_x, rot_y), angle)
-    brow_rot = cp.vstack([brow_rot, [0, 0, 1]])
-    brow_rot = cp.matmul(brow_shift, brow_rot)
-    return brow_rot.get()
+    brow_shift = utils.get_shift_mat(0, -y_offset)
+    brow_rot = utils.get_rot_mat((rot_x, rot_y), angle, True)
+    brow_rot = np.vstack([brow_rot, [0, 0, 1]])
+    brow_rot = np.matmul(brow_shift, brow_rot)
+    return brow_rot
 
 
 def breathe(cur, status):

@@ -9,7 +9,7 @@ SHOW_INPUT = True
 SHOW_OUTPUT = True
 
 # ограничение fps
-TARGET_FPS = 10
+TARGET_FPS = 15
 
 # цвет фона (для хромакея, например), BGRA
 B_COLOR = (0, 255, 0, 255)
@@ -39,8 +39,9 @@ HEAD_MAX_X_TILT = int(8 / DOWNSCALING)
 # ключевые точки анимации #
 ###########################
 
-# y точки вращения головы относительно центра картинки
-HEAD_ROT_POINT_Y = int(140 / DOWNSCALING)
+# точка вращения головы относительно левого верхнего края картинки
+HEAD_ROT_POINT_Y = int(404 / DOWNSCALING)
+HEAD_ROT_POINT_X = int(274 / DOWNSCALING)
 
 # y точки вращения неподвижной части волос
 UM_HAIR_ROT_POINT_Y = int(300 / DOWNSCALING)

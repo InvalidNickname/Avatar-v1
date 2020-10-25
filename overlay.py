@@ -48,6 +48,7 @@ class Overlay:
             self.animations[i]["frames"] = []
             for j in range(len(frames)):
                 self.animations[i]["frames"].append(self.load_image(frames[j]))
+        self.new_shape = self.overlays[0]["background"].shape[1], self.overlays[0]["background"].shape[0]
 
     def get_img(self, part):
         for anim_id, showing in self.animations_showing.items():
@@ -62,8 +63,7 @@ class Overlay:
         return self.overlays[0]["background"].shape
 
     def w_s(self):
-        new_shape = (self.overlays[0]["background"].shape[1], self.overlays[0]["background"].shape[0])
-        return new_shape
+        return self.new_shape
 
     def load_image(self, path):
         if path != "":

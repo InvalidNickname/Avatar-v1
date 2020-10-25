@@ -1,6 +1,7 @@
 import math
 import cv2 as cv
 import cupy as cp
+import numpy as np
 
 from limits import *
 
@@ -32,10 +33,10 @@ def blend_transparent(background, overlay):
 
 def vertical_shift(arr, num, fill_value=0):
     result = cp.empty_like(arr)
-    if num > 0:
+    if num > 1:
         result[:num, :, :] = fill_value
         result[num:, :, :] = arr[:-num, :, :]
-    elif num < 0:
+    elif num < -1:
         result[num:, :, :] = fill_value
         result[:num, :, :] = arr[-num:, :, :]
     else:
@@ -45,10 +46,10 @@ def vertical_shift(arr, num, fill_value=0):
 
 def horizontal_shift(arr, num, fill_value=0):
     result = cp.empty_like(arr)
-    if num > 0:
+    if num > 1:
         result[:, :num, :] = fill_value
         result[:, num:, :] = arr[:, :-num, :]
-    elif num < 0:
+    elif num < -1:
         result[:, num:, :] = fill_value
         result[:, :num, :] = arr[:, -num:, :]
     else:
@@ -56,13 +57,21 @@ def horizontal_shift(arr, num, fill_value=0):
     return result
 
 
-def get_rot_mat(center, angle):
+def get_rot_mat(center, angle, cpu=False):
     angle = math.radians(angle)
     alpha = math.cos(angle)
     beta = math.sin(angle)
-    res = cp.array([[alpha, beta, (1 - alpha) * center[0] - beta * center[1]],
-                    [-beta, alpha, beta * center[0] + (1 - alpha) * center[1]]])
+    if cpu:
+        res = np.array([[alpha, beta, (1 - alpha) * center[0] - beta * center[1]],
+                        [-beta, alpha, beta * center[0] + (1 - alpha) * center[1]]])
+    else:
+        res = cp.array([[alpha, beta, (1 - alpha) * center[0] - beta * center[1]],
+                        [-beta, alpha, beta * center[0] + (1 - alpha) * center[1]]])
     return res
+
+
+def get_shift_mat(horizontal=0, vertical=0):
+    return cp.float32([[1, 0, horizontal], [0, 1, vertical]])
 
 
 def load_image(path):
