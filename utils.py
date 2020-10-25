@@ -15,18 +15,19 @@ def blend_transparent(background, overlay):
     background_img = background[:, :, :3]  # 3 ch
     background_mask = 255 - overlay_mask  # 1 ch
 
-    b_m = background[:, :, 3]
-    mask = cv.add(overlay_mask.get(), b_m.get())  # 1 ch
+    b_m = background[:, :, 3]  # 1 ch
+    mask = cp.add(overlay_mask.astype(cp.uint16), b_m.astype(cp.uint16))  # 1 ch
+    mask = cp.where(mask > 255, 255, mask)  # 1 ch
 
-    overlay_mask = cp.array(cv.cvtColor(overlay_mask.get(), cv.COLOR_GRAY2BGR))  # 3 ch
-    background_mask = cp.array(cv.cvtColor(background_mask.get(), cv.COLOR_GRAY2BGR))  # 3 ch
+    overlay_mask = cp.dstack([overlay_mask, overlay_mask, overlay_mask])  # 3 ch
+    background_mask = cp.dstack([background_mask, background_mask, background_mask])  # 3 ch
 
     background_part = background_img * (background_mask / 255.0)  # 3 ch
     overlay_part = overlay_img * (overlay_mask / 255.0)  # 3 ch
 
     ch_3_res = cp.add(background_part, overlay_part)
     res = cp.dstack([ch_3_res, mask])
-    return cp.array(res, dtype=cp.uint8)
+    return res.astype(cp.uint8)
 
 
 def vertical_shift(arr, num, fill_value=0):
