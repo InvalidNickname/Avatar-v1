@@ -44,6 +44,38 @@ def vertical_shift(arr, num, fill_value=0):
     return result
 
 
+def shift(arr, vertical=0, horizontal=0, fill_value=0):
+    result = cp.empty_like(arr)
+    if horizontal >= 1:
+        if vertical >= 1:
+            result[:, :horizontal, :] = fill_value
+            result[:vertical, :, :] = fill_value
+            result[vertical:, horizontal:, :] = arr[:-vertical, :-horizontal, :]
+        elif vertical <= -1:
+            result[:, :horizontal, :] = fill_value
+            result[vertical:, :, :] = fill_value
+            result[:vertical, horizontal:, :] = arr[-vertical:, :-horizontal, :]
+        else:
+            result = horizontal_shift(arr, horizontal, fill_value)
+    elif horizontal <= -1:
+        if vertical >= 1:
+            result[:, horizontal:, :] = fill_value
+            result[:vertical, :, :] = fill_value
+            result[vertical:, :horizontal, :] = arr[:-vertical, -horizontal:, :]
+        elif vertical <= -1:
+            result[:, horizontal:, :] = fill_value
+            result[vertical:, :, :] = fill_value
+            result[:vertical, :horizontal, :] = arr[-vertical:, -horizontal:, :]
+        else:
+            result = horizontal_shift(arr, horizontal, fill_value)
+    else:
+        if vertical >= 1 or vertical <= -1:
+            result = vertical_shift(arr, vertical, fill_value)
+        else:
+            result = arr.copy()
+    return result
+
+
 def horizontal_shift(arr, num, fill_value=0):
     result = cp.empty_like(arr)
     if num > 1:

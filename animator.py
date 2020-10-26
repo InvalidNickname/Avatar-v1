@@ -44,6 +44,12 @@ class Animator:
 
     def __init__(self, overlays, animations):
         self.imgs = Overlay(overlays, animations)
+        self.l_brow_rot_x = L_BROW_ROT_X - L_BROW_BB[0]
+        self.l_brow_rot_y = L_BROW_ROT_Y - L_BROW_BB[2]
+        self.r_brow_rot_x = R_BROW_ROT_X - R_BROW_BB[0]
+        self.r_brow_rot_y = R_BROW_ROT_Y - R_BROW_BB[2]
+        self.l_b_shape = (L_BROW_BB[2] - L_BROW_BB[0], L_BROW_BB[3] - L_BROW_BB[1])
+        self.r_b_shape = (R_BROW_BB[2] - R_BROW_BB[0], R_BROW_BB[3] - R_BROW_BB[1])
 
     def blink(self):
         if self.blinking == 1:
@@ -118,13 +124,17 @@ class Animator:
         body = cv.warpAffine(hair_back, rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
         body = utils.blend_transparent(cp.array(body), self.imgs.get_img("body"))
 
-        l_brow_mat = make_brow_warp_matrix(self.cur_l_brow, L_BROW_ROT_X, L_BROW_ROT_Y, self.cur_l_brow_tilt)
+        l_brow_m = make_brow_warp_matrix(self.cur_l_brow, self.l_brow_rot_x, self.l_brow_rot_y, self.cur_l_brow_tilt)
         l_brow = self.imgs.get_img("l_brow").get()
-        l_brow = cv.warpAffine(l_brow, l_brow_mat, self.imgs.w_s(), flags=linear, borderMode=bmode)
+        l_brow_part = l_brow[L_BROW_BB[1]:L_BROW_BB[3], L_BROW_BB[0]:L_BROW_BB[2], :]
+        l_brow_part = cv.warpAffine(l_brow_part, l_brow_m, self.l_b_shape, flags=linear, borderMode=bmode)
+        l_brow[L_BROW_BB[1]:L_BROW_BB[3], L_BROW_BB[0]:L_BROW_BB[2], :] = l_brow_part
 
-        r_brow_mat = make_brow_warp_matrix(self.cur_r_brow, R_BROW_ROT_X, R_BROW_ROT_Y, self.cur_r_brow_tilt)
+        r_brow_m = make_brow_warp_matrix(self.cur_r_brow, self.r_brow_rot_x, self.r_brow_rot_y, self.cur_r_brow_tilt)
         r_brow = self.imgs.get_img("r_brow").get()
-        r_brow = cv.warpAffine(r_brow, r_brow_mat, self.imgs.w_s(), flags=linear, borderMode=bmode)
+        r_brow_part = r_brow[R_BROW_BB[1]:R_BROW_BB[3], R_BROW_BB[0]:R_BROW_BB[2], :]
+        r_brow_part = cv.warpAffine(r_brow_part, r_brow_m, self.r_b_shape, flags=linear, borderMode=bmode)
+        r_brow[R_BROW_BB[1]:R_BROW_BB[3], R_BROW_BB[0]:R_BROW_BB[2], :] = r_brow_part
 
         s_face = cp.bitwise_or(cp.array(r_brow), cp.array(l_brow))
         s_face = cp.bitwise_or(s_face, self.imgs.get_img("mouth_" + str(mouth_shape)))
@@ -138,11 +148,7 @@ class Animator:
         eyes = make_eyes(self.c_l_pupil, self.c_r_pupil, self.imgs, self.c_l_eye_s, self.c_r_eye_s)
 
         s_face = cp.bitwise_or(eyes, s_face)
-        s_face = utils.horizontal_shift(s_face, -self.cur_tilt_hor_offset / 2.5)
-        s_face = utils.vertical_shift(s_face, -self.cur_tilt_ver_offset / 1.5)
-
-        hair = utils.horizontal_shift(self.imgs.get_img("hair"), -self.cur_tilt_hor_offset / 5)
-        hair = utils.vertical_shift(hair, -self.cur_tilt_ver_offset / 3)
+        s_face = utils.shift(s_face, -self.cur_tilt_ver_offset / 1.5, -self.cur_tilt_hor_offset / 2.5)
 
         hair_shift = utils.get_shift_mat(-self.cur_tilt_hor_offset / 5, -self.cur_tilt_ver_offset / 3)
         un_rot = utils.get_rot_mat((HEAD_ROT_POINT_X, UM_HAIR_ROT_POINT_Y), -self.cur_tilt / 2, True)
@@ -150,11 +156,12 @@ class Animator:
         un_rot = np.matmul(hair_shift, un_rot)
         hair_um = cv.warpAffine(self.imgs.get_img("hair_unmoving").get(), un_rot, self.imgs.w_s(), borderMode=bmode)
 
+        s_face = cp.bitwise_or(s_face, cp.array(hair_um))
         face = utils.blend_transparent(self.imgs.get_img("head"), s_face)
-        face = utils.blend_transparent(face, cp.array(hair_um))
-        face = utils.blend_transparent(face, cp.array(hair))
-        face = utils.horizontal_shift(face, -self.cur_tilt_hor_offset)
-        face = utils.vertical_shift(face, -self.cur_tilt_ver_offset)
+
+        hair = utils.shift(self.imgs.get_img("hair"), -self.cur_tilt_ver_offset / 3, -self.cur_tilt_hor_offset / 5)
+        face = utils.blend_transparent(face, hair)
+        face = utils.shift(face, -self.cur_tilt_ver_offset, -self.cur_tilt_hor_offset)
         face = cv.warpAffine(face.get(), rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
 
         body = utils.blend_transparent(body, cp.array(face))
