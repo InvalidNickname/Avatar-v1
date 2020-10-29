@@ -25,7 +25,7 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
     C = right_side[0][0] * right_side[1][1] - right_side[1][0] * right_side[0][1]
     # расстояние от уголка рта до прямой
     dist = (abs(A * corners[3][0] + B * corners[3][1] + C) / math.sqrt(math.pow(A, 2) + math.pow(B, 2))) / rel_h
-    if dst < 0.07:
+    if dst < 0.05:
         if dist < 0.18:
             mouth_shape = 14
         elif alpha > 15:
@@ -34,7 +34,7 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
             mouth_shape = 10
         else:
             mouth_shape = 0
-    elif dst < 0.1:
+    elif dst < 0.07:
         if dist < 0.18:
             mouth_shape = 15
         elif alpha > 15:
@@ -43,7 +43,7 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
             mouth_shape = 11
         else:
             mouth_shape = 1
-    elif dst < 0.15:
+    elif dst < 0.09:
         if dist < 0.18:
             mouth_shape = 16
         elif mean_mouth < 220:
@@ -57,7 +57,7 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
             # зубы показаны полностью
             mouth_shape = 4
     else:
-        if dist < 0.18:
+        if dist < 0.12:
             mouth_shape = 17
         elif mean_mouth < 220:
             if alpha > 15:
@@ -192,8 +192,6 @@ def main():
 
     rects = None  # обнаруженные лица
 
-    shape_history = []  # точки лица за последние кадры
-
     dt_history = []  # время распознавания за последние кадры
     rt_history = []  # время отрисовки за последние кадры
     ft_history = []  # время кадра за последние кадры
@@ -228,11 +226,7 @@ def main():
             if len(dt_history) >= 10:
                 dt_history = dt_history[1:9]
             dt_history.append(time.time() - ds)
-            tmp_shape = face_utils.shape_to_np(tmp_shape)
-            if len(shape_history) >= 2:
-                shape_history = shape_history[1:9]
-            shape_history.append(tmp_shape)
-            shape = np.mean(shape_history, axis=0).astype(dtype=np.int32)
+            shape = face_utils.shape_to_np(tmp_shape)
             # отрисовка лица и точек на оригинале
             (x, y, w, h) = face_utils.rect_to_bb(face)
             cv.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 0), 2)

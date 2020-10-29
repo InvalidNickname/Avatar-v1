@@ -45,9 +45,9 @@ class Animator:
     def __init__(self, overlays, animations):
         self.imgs = Overlay(overlays, animations)
         self.l_brow_rot_x = L_BROW_ROT_X - L_BROW_BB[0]
-        self.l_brow_rot_y = L_BROW_ROT_Y - L_BROW_BB[2]
+        self.l_brow_rot_y = L_BROW_ROT_Y - L_BROW_BB[1]
         self.r_brow_rot_x = R_BROW_ROT_X - R_BROW_BB[0]
-        self.r_brow_rot_y = R_BROW_ROT_Y - R_BROW_BB[2]
+        self.r_brow_rot_y = R_BROW_ROT_Y - R_BROW_BB[1]
         self.l_b_shape = (L_BROW_BB[2] - L_BROW_BB[0], L_BROW_BB[3] - L_BROW_BB[1])
         self.r_b_shape = (R_BROW_BB[2] - R_BROW_BB[0], R_BROW_BB[3] - R_BROW_BB[1])
 
@@ -81,9 +81,9 @@ class Animator:
             head_vertical_tilt = -head_vertical_tilt - 180
         else:
             head_vertical_tilt = -head_vertical_tilt + 180
-        self.cur_vertical_tilt = move_slowly(head_vertical_tilt, self.cur_vertical_tilt, 3)
+        self.cur_vertical_tilt = move_slowly(head_vertical_tilt, self.cur_vertical_tilt, 5)
         self.cur_vertical_tilt = set_limits(self.cur_vertical_tilt, LIMIT_HEAD_TILT, -LIMIT_HEAD_TILT)
-        self.cur_horizontal_tilt = move_slowly(head_horizontal_tilt, self.cur_horizontal_tilt, 3)
+        self.cur_horizontal_tilt = move_slowly(head_horizontal_tilt, self.cur_horizontal_tilt, 5)
         self.cur_horizontal_tilt = set_limits(self.cur_horizontal_tilt, LIMIT_HEAD_TILT, -LIMIT_HEAD_TILT)
         self.cur_tilt_hor_offset = self.cur_horizontal_tilt / LIMIT_HEAD_TILT * HEAD_MAX_X_TILT
         self.cur_tilt_ver_offset = self.cur_vertical_tilt / LIMIT_HEAD_TILT * HEAD_MAX_Y_TILT
