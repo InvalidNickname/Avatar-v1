@@ -177,11 +177,13 @@ def main():
         overlays = json.load(read_file)
     with open("data/toggleable_animations.json", "r") as read_file:
         animations = json.load(read_file)
+    with open("data/limits.json", "r") as read_file:
+        limits = json.load(read_file)
 
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor("data/model.dat")
 
-    animator = anim.Animator(overlays, animations)
+    animator = anim.Animator(overlays, animations, limits)
 
     next_blink = random.random() * 2 + 3
     prev_blink = time.time()
