@@ -137,7 +137,8 @@ class Animator:
         r_brow[R_BROW_BB[1]:R_BROW_BB[3], R_BROW_BB[0]:R_BROW_BB[2], :] = r_brow_part
 
         s_face = cp.bitwise_or(cp.array(r_brow), cp.array(l_brow))
-        s_face = cp.bitwise_or(s_face, self.imgs.get_img("mouth_" + str(mouth_shape)))
+        mouth = make_mouth(self.imgs, mouth_shape, self.cur_tilt_hor_offset / 3, self.cur_tilt_ver_offset / 3)
+        s_face = cp.bitwise_or(s_face, mouth)
 
         if self.blinking == 0:
             self.c_r_eye_s = r_eye_s
@@ -215,6 +216,16 @@ def make_eyes(l_pupil_pos, r_pupil_pos, imgs, l_eye_shape, r_eye_shape):
     eye_shape = cp.bitwise_or(l_eye_s, r_eye_s)
     res_eye = utils.blend_transparent(res_eye, eye_shape)
     return res_eye
+
+
+def make_mouth(imgs, shape, x_shift, y_shift):
+    mouth_contour = imgs.get_img("mouth_" + str(shape))
+    mouth_white = imgs.get_img("mouth_white_" + str(shape))
+    mouth_base = imgs.get_img("mouth_base").copy()
+    mouth_base = utils.shift(mouth_base, y_shift, x_shift)
+    mouth_base[mouth_white[:, :, 3] == 0] = 0
+    res_mouth = utils.blend_transparent(mouth_base, mouth_contour)
+    return res_mouth
 
 
 def move_slowly(direction, current, multiplier):

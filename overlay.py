@@ -7,7 +7,10 @@ def get_part_name_for_loading(part):
     if part == "mouth":
         return ["mouth_0", "mouth_1", "mouth_2", "mouth_3", "mouth_4", "mouth_5", "mouth_6", "mouth_7", "mouth_8",
                 "mouth_9", "mouth_10", "mouth_11", "mouth_12", "mouth_13", "mouth_14", "mouth_15", "mouth_16",
-                "mouth_17"]
+                "mouth_17", "mouth_base", "mouth_white_0", "mouth_white_1", "mouth_white_2", "mouth_white_3",
+                "mouth_white_4", "mouth_white_5", "mouth_white_6", "mouth_white_7", "mouth_white_8", "mouth_white_9",
+                "mouth_white_10", "mouth_white_11", "mouth_white_12", "mouth_white_13", "mouth_white_14",
+                "mouth_white_15", "mouth_white_16", "mouth_white_17", ]
     elif part == "r_eye_white":
         return ["r_eye_white_0", "r_eye_white_1", "r_eye_white_2", "r_eye_white_3", "r_eye_white_4", "r_eye_white_5",
                 "r_eye_white_6"]
