@@ -26,6 +26,8 @@ class Animator:
     # текущее расположение зрачков
     c_r_pupil = 0
     c_l_pupil = 0
+    c_r_pupil_ver = 0
+    c_l_pupil_ver = 0
     # текущая форма глаз
     c_r_eye_s = 6
     c_l_eye_s = 6
@@ -71,7 +73,7 @@ class Animator:
         self.c_r_eye_s = self.blinking_mat[self.blinking_step]
         self.c_l_eye_s = self.c_r_eye_s
 
-    def animate(self, angle, l_brow_pos, r_brow_pos, r_pupil_pos, l_pupil_pos, l_brow_tilt,
+    def animate(self, angle, l_brow_pos, r_brow_pos, r_pupil_pos, r_pupil_ver, l_pupil_pos, l_pupil_ver, l_brow_tilt,
                 r_brow_tilt, head_vertical_tilt, head_horizontal_tilt):
         # поворачиваем лицо
         self.cur_tilt = move_slowly(angle, self.cur_tilt, 3)
@@ -97,6 +99,8 @@ class Animator:
         # двигаем зрачки
         self.c_r_pupil = move_slowly(r_pupil_pos, self.c_r_pupil, 2)
         self.c_l_pupil = move_slowly(l_pupil_pos, self.c_l_pupil, 2)
+        self.c_r_pupil_ver = move_slowly(r_pupil_ver, self.c_r_pupil_ver, 2)
+        self.c_l_pupil_ver = move_slowly(l_pupil_ver, self.c_l_pupil_ver, 2)
         # дыхание
         self.cur_breathe, self.breathe_status = breathe(self.cur_breathe, self.breathe_status)
 
@@ -104,7 +108,7 @@ class Animator:
         if abs(self.target_head_tilt - self.head_tilt) < 0.05:
             self.target_head_tilt = random.random() * 20 - 10
         self.head_tilt = move_slowly(self.target_head_tilt, self.head_tilt, 7)
-        self.animate(self.head_tilt, 0, 0, 0, 0, 0, 0, 0, 0)
+        self.animate(self.head_tilt, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
     def standby(self, animate):
         if animate:
@@ -146,7 +150,8 @@ class Animator:
         else:
             self.blink()
 
-        eyes = make_eyes(self.c_l_pupil, self.c_r_pupil, self.imgs, self.c_l_eye_s, self.c_r_eye_s)
+        eyes = make_eyes(self.c_l_pupil, self.c_l_pupil_ver, self.c_r_pupil, self.c_r_pupil_ver, self.imgs,
+                         self.c_l_eye_s, self.c_r_eye_s)
 
         s_face = cp.bitwise_or(eyes, s_face)
         s_face = utils.shift(s_face, -self.cur_tilt_ver_offset / 1.5, -self.cur_tilt_hor_offset / 2.5)
@@ -200,11 +205,11 @@ class Animator:
         return self.imgs.get_cur_animations()
 
 
-def make_eyes(l_pupil_pos, r_pupil_pos, imgs, l_eye_shape, r_eye_shape):
+def make_eyes(l_pupil_pos, l_pupil_ver, r_pupil_pos, r_pupil_ver, imgs, l_eye_shape, r_eye_shape):
     l_eye_pupil = imgs.get_img("l_eye_pupil").copy()
-    l_eye_pupil = utils.horizontal_shift(l_eye_pupil, int(l_pupil_pos))
+    l_eye_pupil = utils.shift(l_eye_pupil, int(l_pupil_ver), int(l_pupil_pos))
     r_eye_pupil = imgs.get_img("r_eye_pupil").copy()
-    r_eye_pupil = utils.horizontal_shift(r_eye_pupil, int(r_pupil_pos))
+    r_eye_pupil = utils.shift(r_eye_pupil, int(r_pupil_ver), int(r_pupil_pos))
     l_eye_white = imgs.get_img("l_eye_white_" + str(l_eye_shape))
     r_eye_white = imgs.get_img("r_eye_white_" + str(r_eye_shape))
     eye_white = cp.bitwise_or(l_eye_white, r_eye_white)

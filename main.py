@@ -90,19 +90,28 @@ def get_eye_shape(upper_point, lower_point, rel_h):
     return eye_shape
 
 
-def get_pupil_pos(eye_area, right_point, left_point):
+def get_pupil_pos(eye_area, right_point, left_point, upper_point, lower_point):
     eye_area = cv.equalizeHist(eye_area)
     _, thresh_gray = cv.threshold(eye_area, 0, 255, cv.THRESH_BINARY)
+    thresh_gray = cv.erode(thresh_gray, None)
+    thresh_gray = cv.dilate(thresh_gray, None)
     max_cols = np.amin(thresh_gray, axis=0)
     occurrences = np.where(max_cols == 0)[0]
     if len(occurrences) != 0:
         max_index = (occurrences[len(occurrences) - 1] + occurrences[0]) / 2
-        pupil_pos = max_index - (right_point[0] + left_point[0]) / 2 + left_point[0]
+        pupil_pos_horizontal = max_index - (right_point[0] + left_point[0]) / 2 + left_point[0]
         dst = occurrences[len(occurrences) - 1] - occurrences[0]
     else:
-        pupil_pos = 0
+        pupil_pos_horizontal = 0
         dst = 0
-    return pupil_pos * 2 / DOWNSCALING, dst
+    max_rows = np.amin(thresh_gray, axis=1)
+    occurrences = np.where(max_rows == 0)[0]
+    if len(occurrences) != 0:
+        max_index = (occurrences[len(occurrences) - 1] + occurrences[0]) / 2
+        pupil_pos_vertical = max_index - (upper_point[1] + lower_point[1]) / 2 + upper_point[1]
+    else:
+        pupil_pos_vertical = 0
+    return pupil_pos_horizontal * 2 / DOWNSCALING, pupil_pos_vertical * 2 / DOWNSCALING + 6, dst
 
 
 def check_blinking(prev_blink, next_blink, animator):
@@ -261,18 +270,19 @@ def main():
             # правый глаз - точки 38, 42
             right_eye_shape = get_eye_shape(shape[37], shape[41], rel_h)
             right_eye_area = gray[shape[37][1]:shape[41][1], shape[36][0]:shape[39][0]]
-            r_pupil_pos, dst = get_pupil_pos(right_eye_area, shape[39], shape[36])
+            r_pupil_pos, r_pupil_ver, dst = get_pupil_pos(right_eye_area, shape[39], shape[36], shape[37], shape[41])
             if right_eye_shape == 1 and dst > (shape[39][0] - shape[36][0]) / 2:
                 right_eye_shape = 0
             # левый глаз - точки 43, 47
             left_eye_shape = get_eye_shape(shape[44], shape[46], rel_h)
             left_eye_area = gray[shape[44][1]:shape[46][1], shape[42][0]:shape[44][0]]
-            l_pupil_pos, dst = get_pupil_pos(left_eye_area, shape[45], shape[42])
+            l_pupil_pos, l_pupil_ver, dst = get_pupil_pos(left_eye_area, shape[45], shape[42], shape[44], shape[46])
             if left_eye_shape == 1 and dst > (shape[44][0] - shape[42][0]) / 2:
                 left_eye_shape = 0
             # брови
-            right_brow_pos_delta = (utils.length(shape[37], shape[19]) / rel_h - 0.3) * 40
-            left_brow_pos_delta = (utils.length(shape[44], shape[24]) / rel_h - 0.3) * 40
+            delta = angles[0] + 175 if angles[0] < 0 else angles[0] - 175
+            right_brow_pos_delta = (utils.length(shape[37], shape[19]) / rel_h - 0.3) * 40 + delta
+            left_brow_pos_delta = (utils.length(shape[44], shape[24]) / rel_h - 0.3) * 40 + delta
             # наклон бровей
             a = shape[18][0] - shape[20][0]
             b = shape[20][1] - shape[18][1]
@@ -281,8 +291,8 @@ def main():
             b = shape[25][1] - shape[23][1]
             r_brow_tilt = (alpha - math.degrees(math.atan(b / a))) / 2
             # анимирование подвижных частей
-            animator.animate(alpha, left_brow_pos_delta, right_brow_pos_delta, r_pupil_pos, l_pupil_pos,
-                             l_brow_tilt, r_brow_tilt, angles[0], angles[1])
+            animator.animate(alpha, left_brow_pos_delta, right_brow_pos_delta, r_pupil_pos, r_pupil_ver, l_pupil_pos,
+                             l_pupil_ver, l_brow_tilt, r_brow_tilt, angles[0], angles[1])
             # проверка моргания
             prev_blink, next_blink = check_blinking(prev_blink, next_blink, animator)
             # отрисовка
