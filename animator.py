@@ -82,7 +82,7 @@ class Animator:
         if head_vertical_tilt < 0:
             head_vertical_tilt = -head_vertical_tilt - 180
         else:
-            head_vertical_tilt = -head_vertical_tilt + 180
+            head_vertical_tilt = 0
         self.cur_vertical_tilt = move_slowly(head_vertical_tilt, self.cur_vertical_tilt, 5)
         self.cur_vertical_tilt = set_limits(self.cur_vertical_tilt, LIMIT_HEAD_TILT, -LIMIT_HEAD_TILT)
         self.cur_horizontal_tilt = move_slowly(head_horizontal_tilt, self.cur_horizontal_tilt, 5)
@@ -154,9 +154,9 @@ class Animator:
                          self.c_l_eye_s, self.c_r_eye_s)
 
         s_face = cp.bitwise_or(eyes, s_face)
-        s_face = utils.shift(s_face, -self.cur_tilt_ver_offset / 1.5, -self.cur_tilt_hor_offset / 2.5)
+        s_face = utils.shift(s_face, -self.cur_tilt_ver_offset, -self.cur_tilt_hor_offset / 1.5)
 
-        hair_shift = utils.get_shift_mat(-self.cur_tilt_hor_offset / 5, -self.cur_tilt_ver_offset / 3)
+        hair_shift = utils.get_shift_mat(-self.cur_tilt_hor_offset / 3, -self.cur_tilt_ver_offset / 3)
         un_rot = utils.get_rot_mat((HEAD_ROT_POINT_X, UM_HAIR_ROT_POINT_Y), -self.cur_tilt / 2, True)
         un_rot = np.vstack([un_rot, [0, 0, 1]])
         un_rot = np.matmul(hair_shift, un_rot)
@@ -165,7 +165,7 @@ class Animator:
         s_face = cp.bitwise_or(s_face, cp.array(hair_um))
         face = utils.blend_transparent(self.imgs.get_img("head"), s_face)
 
-        hair = utils.shift(self.imgs.get_img("hair"), -self.cur_tilt_ver_offset / 3, -self.cur_tilt_hor_offset / 5)
+        hair = utils.shift(self.imgs.get_img("hair"), -self.cur_tilt_ver_offset / 1.5, -self.cur_tilt_hor_offset / 5)
         face = utils.blend_transparent(face, hair)
         face = utils.shift(face, -self.cur_tilt_ver_offset, -self.cur_tilt_hor_offset)
         face = cv.warpAffine(face.get(), rot, self.imgs.w_s(), flags=linear, borderMode=bmode)
