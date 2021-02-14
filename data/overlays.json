@@ -78,7 +78,7 @@
       "l_eye_5": "data/animation/left_eye/eye/5.png",
       "l_eye_6": "data/animation/left_eye/eye/6.png",
       "hair": "data/animation/hair/basic.png",
-      "hair_um": "data/animation/hair/unmoving.png"
+      "hair_unmoving": "data/animation/hair/unmoving.png"
     }
   },
   {
@@ -97,7 +97,7 @@
       "l_eye_white": "",
       "l_eye_pupil": "",
       "l_eye": "",
-      "hair_um": ""
+      "hair_unmoving": ""
     }
   }
 ]

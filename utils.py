@@ -62,50 +62,6 @@ def vertical_shift(arr, num, fill_value=0):
     return result
 
 
-def get_bb(img):
-    alpha = img[:, :, 3]
-    if cp.max(alpha) == 0:
-        return [0, 1, 0, 1]
-    else:
-        rows = cp.any(alpha, axis=1)
-        cols = cp.any(alpha, axis=0)
-        y_min, y_max = cp.where(rows)[0][[0, -1]]
-        x_min, x_max = cp.where(cols)[0][[0, -1]]
-        return [int(y_min), int(y_max), int(x_min), int(x_max)]
-
-
-def warp_with_bb(img, bb, mat):
-    part = img[bb[0]:bb[1], bb[2]:bb[3], :]
-    shape = (part.shape[1], part.shape[0])
-    part = cv.warpAffine(part, mat, shape, flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
-    img[bb[0]:bb[1], bb[2]:bb[3], :] = part
-    return img
-
-
-def blend_with_bb(background, overlay, bb):
-    overlay_part = overlay[bb[0]:bb[1] + 1, bb[2]:bb[3], :]
-    background_part = background[bb[0]:bb[1] + 1, bb[2]:bb[3], :]
-    res = background.copy()
-    res[bb[0]:bb[1] + 1, bb[2]:bb[3], :] = blend_transparent(background_part, overlay_part)
-    return res
-
-
-def combine_bbs(bb_a, bb_b):
-    a = min(bb_a[0], bb_b[0])
-    b = max(bb_a[1], bb_b[1])
-    c = min(bb_a[2], bb_b[2])
-    d = max(bb_a[3], bb_b[3])
-    return [a, b, c, d]
-
-
-def bitwise_or_with_bb(a, b, bb):
-    a_part = a[bb[0]:bb[1] + 1, bb[2]:bb[3], :]
-    b_part = b[bb[0]:bb[1] + 1, bb[2]:bb[3], :]
-    res = a.copy()
-    res[bb[0]:bb[1] + 1, bb[2]:bb[3], :] = cp.bitwise_or(a_part, b_part)
-    return res
-
-
 def shift(arr, vertical=0, horizontal=0, fill_value=0):
     result = cp.empty_like(arr)
     if horizontal >= 1:
