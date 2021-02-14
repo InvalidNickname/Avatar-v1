@@ -2,6 +2,7 @@ import math
 import cv2 as cv
 import cupy as cp
 import numpy as np
+from datetime import datetime
 
 from limits import *
 
@@ -29,6 +30,12 @@ def blend_transparent(background, overlay):
     ch_3_res = cp.add(background_part, overlay_part)
     res = cp.dstack([ch_3_res, mask])
     return res.astype(cp.uint8)
+
+
+def warp_with_bb(img, bb, matrix, shape):
+    img_part = img[bb[1]:bb[3], bb[0]:bb[2], :]
+    img_part = cv.warpAffine(img_part, matrix, shape, flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
+    img[bb[1]:bb[3], bb[0]:bb[2], :] = img_part
 
 
 def vertical_shift(arr, num, fill_value=0):

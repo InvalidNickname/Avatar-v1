@@ -9,7 +9,7 @@ SHOW_INPUT = True
 SHOW_OUTPUT = True
 
 # ограничение fps
-TARGET_FPS = 20
+TARGET_FPS = 30
 
 # цвет фона (для хромакея, например), BGRA
 B_COLOR = (0, 255, 0, 255)

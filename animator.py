@@ -130,19 +130,14 @@ class Animator:
 
         l_brow_m = make_brow_warp_matrix(self.cur_l_brow, self.l_brow_rot_x, self.l_brow_rot_y, self.cur_l_brow_tilt)
         l_brow = self.imgs.get_img("l_brow").get()
-        l_brow_part = l_brow[L_BROW_BB[1]:L_BROW_BB[3], L_BROW_BB[0]:L_BROW_BB[2], :]
-        l_brow_part = cv.warpAffine(l_brow_part, l_brow_m, self.l_b_shape, flags=linear, borderMode=bmode)
-        l_brow[L_BROW_BB[1]:L_BROW_BB[3], L_BROW_BB[0]:L_BROW_BB[2], :] = l_brow_part
+        utils.warp_with_bb(l_brow, L_BROW_BB, l_brow_m, self.l_b_shape)
 
         r_brow_m = make_brow_warp_matrix(self.cur_r_brow, self.r_brow_rot_x, self.r_brow_rot_y, self.cur_r_brow_tilt)
         r_brow = self.imgs.get_img("r_brow").get()
-        r_brow_part = r_brow[R_BROW_BB[1]:R_BROW_BB[3], R_BROW_BB[0]:R_BROW_BB[2], :]
-        r_brow_part = cv.warpAffine(r_brow_part, r_brow_m, self.r_b_shape, flags=linear, borderMode=bmode)
-        r_brow[R_BROW_BB[1]:R_BROW_BB[3], R_BROW_BB[0]:R_BROW_BB[2], :] = r_brow_part
+        utils.warp_with_bb(r_brow, R_BROW_BB, r_brow_m, self.r_b_shape)
 
         s_face = cp.bitwise_or(cp.array(r_brow), cp.array(l_brow))
         mouth = make_mouth(self.imgs, mouth_shape, self.cur_tilt_hor_offset / 3, self.cur_tilt_ver_offset / 3)
-        s_face = cp.bitwise_or(s_face, mouth)
 
         if self.blinking == 0:
             self.c_r_eye_s = r_eye_s
@@ -156,6 +151,8 @@ class Animator:
         s_face = cp.bitwise_or(eyes, s_face)
         s_face = utils.shift(s_face, -self.cur_tilt_ver_offset, -self.cur_tilt_hor_offset / 1.5)
 
+        s_face = cp.bitwise_or(s_face, mouth)
+
         hair_shift = utils.get_shift_mat(-self.cur_tilt_hor_offset / 3, -self.cur_tilt_ver_offset / 3)
         un_rot = utils.get_rot_mat((HEAD_ROT_POINT_X, UM_HAIR_ROT_POINT_Y), -self.cur_tilt / 2, True)
         un_rot = np.vstack([un_rot, [0, 0, 1]])
@@ -163,7 +160,15 @@ class Animator:
         hair_um = cv.warpAffine(self.imgs.get_img("hair_unmoving").get(), un_rot, self.imgs.w_s(), borderMode=bmode)
 
         s_face = cp.bitwise_or(s_face, cp.array(hair_um))
-        face = utils.blend_transparent(self.imgs.get_img("head"), s_face)
+
+        head = self.imgs.get_img("head").get()
+        if self.cur_vertical_tilt < 0:
+            head = cv.resize(head, None, fy=1 + self.cur_vertical_tilt / 100, fx=1)
+            offset = int((hair_back.shape[0] - head.shape[0]) / 3)
+            delta = hair_back.shape[0] - head.shape[0] - 3 * offset
+            head = cv.copyMakeBorder(head, 2 * offset, offset + delta, 0, 0, cv.BORDER_CONSTANT, value=0)
+
+        face = utils.blend_transparent(cp.array(head), s_face)
 
         hair = utils.shift(self.imgs.get_img("hair"), -self.cur_tilt_ver_offset / 1.5, -self.cur_tilt_hor_offset / 5)
         face = utils.blend_transparent(face, hair)
