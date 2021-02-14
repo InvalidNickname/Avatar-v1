@@ -30,5 +30,31 @@
       "data/animation/toggleable/mofu_mofu/2.png",
       "data/animation/hair/back.png"
     ]
+  },
+  {
+    "name": "omg_eyes_l",
+    "key": "o",
+    "id": 2,
+    "for_overlays": "|0|",
+    "on_repeat": "reverse",
+    "on_end": "leave",
+    "replaces": "l_eye_pupil",
+    "speed": 1,
+    "frames": [
+      "data/animation/toggleable/omg_eyes/l_eye.png"
+    ]
+  },
+  {
+    "name": "omg_eyes_r",
+    "key": "o",
+    "id": 3,
+    "for_overlays": "|0|",
+    "on_repeat": "reverse",
+    "on_end": "leave",
+    "replaces": "r_eye_pupil",
+    "speed": 1,
+    "frames": [
+      "data/animation/toggleable/omg_eyes/r_eye.png"
+    ]
   }
 ]

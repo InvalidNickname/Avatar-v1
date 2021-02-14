@@ -239,7 +239,7 @@ def main():
             dt_history.append(time.time() - ds)
             tmp_shape = face_utils.shape_to_np(tmp_shape)
             if len(shape_history) >= 3:
-                shape_history = shape_history[1:9]
+                shape_history = shape_history[1:2]
             shape_history.append(tmp_shape)
             shape = np.mean(shape_history, axis=0).astype(dtype=np.int32)
             # отрисовка лица и точек на оригинале
@@ -347,10 +347,9 @@ def main():
             for animation_key in animations:
                 if keyboard.is_pressed('alt+' + animation_key["key"]):
                     animator.toggle_animation(animation_key["id"])
-                    break
 
         wait_time = int(1000 / TARGET_FPS - 1000 * ft) if ft < 1 / TARGET_FPS else 1
-        cv.waitKey(1 if wait_time == 0 else wait_time)
+        cv.waitKey(1 if wait_time <= 0 else wait_time)
 
     cap.release()
     cv.destroyAllWindows()
