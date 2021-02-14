@@ -9,7 +9,7 @@ SHOW_INPUT = True
 SHOW_OUTPUT = True
 
 # ограничение fps
-TARGET_FPS = 30
+TARGET_FPS = 24
 
 # цвет фона (для хромакея, например), BGRA
 B_COLOR = (0, 255, 0, 255)
@@ -28,12 +28,9 @@ LIMIT_HEAD_TILT = 15
 LIMIT_BROW_HIGH = int(10 / DOWNSCALING)
 LIMIT_BROW_LOW = int(-2 / DOWNSCALING)
 
-# максимальное смещение головы по вертикали
-HEAD_MAX_Y_OFFSET = int(10 / DOWNSCALING)
-
 # максимальное смещение головы по вертикали/горизонтали при наклоне
 HEAD_MAX_Y_TILT = int(8 / DOWNSCALING)
-HEAD_MAX_X_TILT = int(8 / DOWNSCALING)
+HEAD_MAX_X_TILT = int(16 / DOWNSCALING)
 
 ###########################
 # ключевые точки анимации #
@@ -68,7 +65,7 @@ BREATHING_SPD = 0.4 / DOWNSCALING
 ###################################################
 
 # левая бровь, указываются левая верхняя и нижняя правая точки потенциального пространства отрисовки
-L_BROW_BB = (264, 137, 396, 274)
+L_BROW_BB = (int(264 / DOWNSCALING), int(137 / DOWNSCALING), int(396 / DOWNSCALING), int(274 / DOWNSCALING))
 
 # правая бровь
-R_BROW_BB = (132, 137, 264, 274)
+R_BROW_BB = (int(132 / DOWNSCALING), int(137 / DOWNSCALING), int(264 / DOWNSCALING), int(274 / DOWNSCALING))

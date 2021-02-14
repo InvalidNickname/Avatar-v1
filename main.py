@@ -201,6 +201,8 @@ def main():
 
     rects = None  # обнаруженные лица
 
+    shape_history = []  # точки лица за последние кадры
+
     dt_history = []  # время распознавания за последние кадры
     rt_history = []  # время отрисовки за последние кадры
     ft_history = []  # время кадра за последние кадры
@@ -235,7 +237,11 @@ def main():
             if len(dt_history) >= 10:
                 dt_history = dt_history[1:9]
             dt_history.append(time.time() - ds)
-            shape = face_utils.shape_to_np(tmp_shape)
+            tmp_shape = face_utils.shape_to_np(tmp_shape)
+            if len(shape_history) >= 3:
+                shape_history = shape_history[1:9]
+            shape_history.append(tmp_shape)
+            shape = np.mean(shape_history, axis=0).astype(dtype=np.int32)
             # отрисовка лица и точек на оригинале
             (x, y, w, h) = face_utils.rect_to_bb(face)
             cv.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 0), 2)
