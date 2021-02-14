@@ -12,24 +12,35 @@ def length(p1, p2):
 
 
 def blend_transparent(background, overlay):
-    overlay_img = overlay[:, :, :3]  # 3 ch
-    overlay_mask = overlay[:, :, 3]  # 1 ch
-    background_img = background[:, :, :3]  # 3 ch
-    background_mask = 255 - overlay_mask  # 1 ch
+    overlay_img = overlay[..., :3]  # 3 ch
+    overlay_mask = overlay[..., 3]  # 1 ch
+    background_img = background[..., :3]  # 3 ch
+    background_mask = cp.invert(overlay_mask)  # 1 ch
 
-    b_m = background[:, :, 3]  # 1 ch
+    b_m = background[..., 3]  # 1 ch
     mask = cp.add(overlay_mask.astype(cp.uint16), b_m.astype(cp.uint16))  # 1 ch
     mask = cp.where(mask > 255, 255, mask)  # 1 ch
 
+    overlay_mask = cp.divide(overlay_mask, 255.0)  # 1 ch
     overlay_mask = cp.dstack([overlay_mask, overlay_mask, overlay_mask])  # 3 ch
+    background_mask = cp.divide(background_mask, 255.0)  # 1 ch
     background_mask = cp.dstack([background_mask, background_mask, background_mask])  # 3 ch
 
-    background_part = background_img * (background_mask / 255.0)  # 3 ch
-    overlay_part = overlay_img * (overlay_mask / 255.0)  # 3 ch
+    background_part = background_img * background_mask  # 3 ch
+    overlay_part = overlay_img * overlay_mask  # 3 ch
 
     ch_3_res = cp.add(background_part, overlay_part)
     res = cp.dstack([ch_3_res, mask])
     return res.astype(cp.uint8)
+
+
+def speed_test(tag, method):
+    sumt = 0
+    for i in range(1000):
+        st = datetime.now().microsecond
+        method()
+        sumt += datetime.now().microsecond - st
+    print(tag, "med:", sumt / 1000)
 
 
 def warp_with_bb(img, bb, matrix, shape):
