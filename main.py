@@ -25,7 +25,7 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
     C = right_side[0][0] * right_side[1][1] - right_side[1][0] * right_side[0][1]
     # расстояние от уголка рта до прямой
     dist = (abs(A * corners[3][0] + B * corners[3][1] + C) / math.sqrt(math.pow(A, 2) + math.pow(B, 2))) / rel_h
-    if dst < 0.05:
+    if dst < 0.12:
         if dist < 0.18:
             mouth_shape = 14
         elif alpha > 15:
@@ -34,7 +34,7 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
             mouth_shape = 10
         else:
             mouth_shape = 0
-    elif dst < 0.07:
+    elif dst < 0.15:
         if dist < 0.18:
             mouth_shape = 15
         elif alpha > 15:
@@ -43,7 +43,7 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
             mouth_shape = 11
         else:
             mouth_shape = 1
-    elif dst < 0.09:
+    elif dst < 0.17:
         if dist < 0.18:
             mouth_shape = 16
         elif mean_mouth < 220:
@@ -57,7 +57,7 @@ def get_mouth_shape(upper_point, lower_point, rel_h, mean_mouth, corners, face_r
             # зубы показаны полностью
             mouth_shape = 4
     else:
-        if dist < 0.12:
+        if dist < 0.19:
             mouth_shape = 17
         elif mean_mouth < 220:
             if alpha > 15:
