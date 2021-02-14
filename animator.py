@@ -118,6 +118,7 @@ class Animator:
             self.c_l_eye_s = 6
         else:
             self.blink()
+        self.cur_breathe, self.breathe_status = breathe(self.cur_breathe, self.breathe_status)
         self.put_mask(0, 6, 6)
         self.display()
 
