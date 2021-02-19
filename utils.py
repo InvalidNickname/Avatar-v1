@@ -12,12 +12,16 @@ def length(p1, p2):
 
 
 def blend_transparent(background, overlay):
-    overlay_img = overlay[..., :3]  # 3 ch
-    overlay_mask = overlay[..., 3]  # 1 ch
-    background_img = background[..., :3]  # 3 ch
+    bb = cv.boundingRect(overlay.get()[..., 3])
+    background_roi = background[bb[1]:bb[1] + bb[3], bb[0]:bb[0] + bb[2], :]
+    overlay_roi = overlay[bb[1]:bb[1] + bb[3], bb[0]:bb[0] + bb[2], :]
+
+    overlay_img = overlay_roi[..., :3]  # 3 ch
+    overlay_mask = overlay_roi[..., 3]  # 1 ch
+    background_img = background_roi[..., :3]  # 3 ch
     background_mask = cp.invert(overlay_mask)  # 1 ch
 
-    b_m = background[..., 3]  # 1 ch
+    b_m = background_roi[..., 3]  # 1 ch
     mask = cp.add(overlay_mask.astype(cp.uint16), b_m.astype(cp.uint16))  # 1 ch
     mask = cp.where(mask > 255, 255, mask)  # 1 ch
 
@@ -30,8 +34,11 @@ def blend_transparent(background, overlay):
     overlay_part = overlay_img * overlay_mask  # 3 ch
 
     ch_3_res = cp.add(background_part, overlay_part)
-    res = cp.dstack([ch_3_res, mask])
-    return res.astype(cp.uint8)
+    res_roi = cp.dstack([ch_3_res, mask])
+
+    res = background.copy()
+    res[bb[1]:bb[1] + bb[3], bb[0]:bb[0] + bb[2], :] = res_roi
+    return res
 
 
 def speed_test(tag, method):

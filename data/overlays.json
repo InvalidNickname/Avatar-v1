@@ -86,8 +86,8 @@
     "id": 1,
     "key": "1",
     "replaces": {
-      "head": "data/animation/overlays/ahegao.png",
-      "hair": "",
+      "head": "data/animation/overlays/ahegao/head.png",
+      "hair": "data/animation/overlays/ahegao/hair.png",
       "l_brow": "",
       "r_brow": "",
       "mouth": "",
@@ -96,8 +96,15 @@
       "r_eye_pupil": "",
       "l_eye_white": "",
       "l_eye_pupil": "",
-      "l_eye": "",
-      "hair_unmoving": ""
+      "l_eye": ""
+    }
+  },
+  {
+    "name": "angel",
+    "id": 2,
+    "key": "2",
+    "replaces": {
+      "hair": "data/animation/overlays/angel/hair.png"
     }
   }
 ]
